@@ -68,8 +68,8 @@ INSERT INTO subastadoras (nombre_sub, id_pais) VALUES
 
 --INSERTS DE PRODUCTORES
 INSERT INTO productores (nombre_prod, pagweb_prod, id_pais) VALUES 
-('Dutch Flower Group', 'dutchflowergroup.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Holanda')),
 ('Flor Ecuador', 'florecuador.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Ecuador')),
+('Dutch Flower Group', 'dutchflowergroup.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Holanda')),
 ('Kordes Roses', 'kordesroses.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Alemania'));
 
 --INSERTS DE FLORISTERIAS
@@ -87,38 +87,118 @@ INSERT INTO floristerias (nombre_floristeria, pagweb_floristeria, telefono_flori
 INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
 (3, 2, '2022-12-12', 'CC', 18.00, 'SI', NULL ), --Productor 2 con Subastador 3, cancelado
 (1, 1, '2023-01-15', 'CB', 35.00, 'SI', NULL), -- Productor 1 con Subastador 1, cancelado
+;
+INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
 (2, 1, '2023-01-15', 'CA', 65.00, 'NO', NULL ), -- Productor 1 con Subastador 2, vencido
 (2, 3, '2023-05-17', 'CG', 30.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, vencido
-(1, 3, '2023-12-29', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido
-(2, 1, '2024-01-15', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido
+;
+
+INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
+(1, 3, '2023-12-29', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido SUBASTADORA 1
+(2, 1, '2024-01-16', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido 
 (2, 2, '2024-01-16', 'KA', 100.00, 'NO', NULL), -- Productor 2 con Subastador 2, ofrece el 100% aca, valido
-(3, 3, '2024-03-06', 'CG', 20.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido
-(2, 3, '2024-05-17', 'CG', 30.00, 'NO', 4) -- Productor 3 que tiene contratos con v companias, valido
+(3, 3, '2024-03-06', 'CG', 20.00, 'NO', NULL), -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
+(2, 3, '2024-05-17', 'CG', 30.00, 'NO', 4) -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
 ;
 
---INSERTS DE PAGOS MULTAS REVISAR!!!!!!!
+--INSERTS DE PAGOS MULTAS 
 
-INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, monto_euros, tipo) VALUES
-(3, 2, 1, '2022-12-12', 500.00, 'MEM'),
-(1, 1, 2, '2023-01-15', 500.00, 'MEM'),
-(2, 1, 3, '2023-01-15', 500.00, 'MEM' ),
-(2, 3, 4, '2023-05-17', 500.00, 'MEM'),
-(1, 3, 5, '2023-12-29', 500.00, 'MEM'),
-(2, 1, 6, '2024-01-15', 500.00, 'MEM'),
-(2, 2, 7, '2024-01-16', 500.00, 'MEM'),
-(3, 3, 8, '2024-03-06', 500.00, 'MEM'),
-(2, 3, 9, '2024-05-17', 500.00, 'MEM'),
+INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo) VALUES
+--Pagos de Membresias
+(3, 2, 1, '2022-12-12', 'MEM'),
+(1, 1, 2, '2023-01-15', 'MEM'),
+(2, 1, 3, '2023-01-15', 'MEM' ),
+(2, 3, 4, '2023-05-17', 'MEM'),
+(1, 3, 5, '2023-12-29', 'MEM'),
+(2, 1, 6, '2024-01-15', 'MEM'),
+(2, 2, 7, '2024-01-16','MEM'),
+(3, 3, 8, '2024-03-06', 'MEM'),
+(2, 3, 9, '2024-05-17', 'MEM'),
 
---(1, 1, 2, '2023-02-05', , 'COM'),  -- Productor 1 (CB) paga 1% de 175.00
---(2, 1, 3, '2024-02-05', , 'COM'), -- Productor 1 (CA) paga 0.5% de 65.00
---(2, 2, 7, '2024-02-05', , 'COM'),  -- Productor 2 (KA) paga 0.25% de 100.00
---(3, 3, 8, '2024-04-05', , 'COM'),   -- Productor 3 (CG) paga 5% de 20.00
+INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo) VALUES
+--Pagos de Comisiones
+(2, 1, 3, '2023-02-01', 'COM'),
+(2, 1, 3, '2023-03-01', 'COM'),
+(2, 1, 3, '2023-04-01' , 'COM'),
+(2, 1, 3, '2023-05-01', 'COM'),
+(2, 1, 3, '2023-06-01' 'COM'),
+(2, 1, 3, '2023-07-01', 'COM'),
+(2, 1, 3, '2023-08-01', 'COM'),
+(2, 1, 3, '2023-09-01', 'COM'),
+(2, 1, 3, '2023-10-01', 'COM'),
+(2, 1, 3, '2023-11-01',  'COM'),
+(2, 1, 3, '2023-12-01', 'COM'),
 
-(3, 2, 1, '2023-01-10', 100.00, 'MUL'), -- Multa por pago tardío (20% de ventas)
-(1, 1, 2, '2023-02-10', 40.00, 'MUL'),  -- Multa por no pagar a tiempo (20% de ventas)
-(2, 1, 3, '2024-02-10', 12.00, 'MUL'),  -- Multa por no pagar a tiempo (20% de ventas)
-(2, 3, 4, '2023-06-10', 100.00, 'MUL'); -- Multa por no pagar a tiempo (20% de ventas)
+(2, 3, 4, '2023-06-04', 'COM'),
+(2, 3, 4, '2023-07-04', 'COM'),
+(2, 3, 4, '2023-08-04', 'COM'),
+(2, 3, 4, '2023-09-04','COM'),
+(2, 3, 4, '2023-10-04','COM'),
+(2, 3, 4, '2023-11-04','COM'),
+(2, 3, 4, '2023-12-04','COM'),
+(2, 3, 4, '2024-01-04','COM'),
+(2, 3, 4, '2024-02-04','COM'),
+(2, 3, 4, '2024-03-04','COM'),
+(2, 3, 4, '2024-04-04','COM'),
+(2, 3, 4, '2024-05-04','COM'),
+
+(1, 3, 5, '2024-01-05', , 'COM'),
+(1, 3, 5, '2024-02-05', , 'COM'),
+(1, 3, 5, '2024-02-05', , 'COM'),
+(1, 3, 5, '2024-04-05', , 'COM'),
+(1, 3, 5, '2024-05-05', , 'COM'),
+(1, 3, 5, '2024-06-05', , 'COM'),
+(1, 3, 5, '2024-07-05', , 'COM'),
+(1, 3, 5, '2024-08-05', , 'COM'),
+(1, 3, 5, '2024-09-05', , 'COM'),
+(1, 3, 5, '2024-10-05', , 'COM'),
+(1, 3, 5, '2024-11-05', , 'COM'),
+(1, 3, 5, '2024-12-05', , 'COM'),
+
+(2, 1, 6, '2024-02-03', , 'COM'),
+(2, 1, 6, '2024-03-03', , 'COM'),
+(2, 1, 6, '2024-04-10', , 'COM'),
+(2, 1, 6, '2024-05-03', , 'COM'),
+(2, 1, 6, '2024-06-03', , 'COM'),
+(2, 1, 6, '2024-07-03', , 'COM'),
+(2, 1, 6, '2024-08-03', , 'COM'),
+(2, 1, 6, '2024-09-03', , 'COM'),
+(2, 1, 6, '2024-10-10', , 'COM'),
+(2, 1, 6, '2024-11-03', , 'COM'),
+(2, 1, 6, '2024-12-03', , 'COM'),
+
+(2, 2, 7, '2024-02-02', , 'COM'),
+(2, 2, 7, '2024-03-02', , 'COM'),
+(2, 2, 7, '2024-04-07', , 'COM'),
+(2, 2, 7, '2024-05-08', , 'COM'),
+(2, 2, 7, '2024-06-10', , 'COM'),
+(2, 2, 7, '2024-07-02', , 'COM'),
+(2, 2, 7, '2024-08-02', , 'COM'),
+(2, 2, 7, '2024-09-02', , 'COM'),
+(2, 2, 7, '2024-10-02', , 'COM'),
+(2, 2, 7, '2024-11-02', , 'COM'),
+(2, 2, 7, '2024-12-02', , 'COM'),
+
+(3, 3, 8, '2024-04-06' , , 'COM'),
+(3, 3, 8, '2024-05-01' , , 'COM'),
+(3, 3, 8, '2024-06-01' , , 'COM'),
+(3, 3, 8, '2024-07-01' , , 'COM'),
+(3, 3, 8, '2024-08-01' , , 'COM'),
+(3, 3, 8, '2024-09-01' , , 'COM'),
+(3, 3, 8, '2024-10-01' , , 'COM'),
+(3, 3, 8, '2024-11-01' , , 'COM'),
+(3, 3, 8, '2024-12-06' , , 'COM'),
+
+(2, 3, 9, '2024-06-01', ,'COM'), 
+(2, 3, 9, '2024-07-01', ,'COM'), 
+(2, 3, 9, '2024-08-01', ,'COM'), 
+(2, 3, 9, '2024-09-01', ,'COM'), 
+(2, 3, 9, '2024-10-01', ,'COM'), 
+(2, 3, 9, '2024-11-01', ,'COM'), 
+(2, 3, 9, '2024-12-01', ,'COM')
 ;
+
+--faltan los de multas
 
 
 --INSERTS DE AFILIACIONES
@@ -139,18 +219,19 @@ INSERT INTO afiliacion (id_sub, id_floristeria) VALUES
 --INSERTS DE CONTACTOS EMPLEADOS
 
 INSERT INTO contactos_empleados (id_floristeria, primer_nombre_rep, primer_apellido, seg_apellido, doc_id_rep, telef_rep) VALUES
-(1, 'Juan', 'Pérez', 'Gómez', 1234567890, '001234567890'),  -- USA
-(2, 'María', 'López', 'Martínez', 2345678901, '004412345678'),  -- Inglaterra
-(3, 'Carlos', 'Fernández', 'Sánchez', 3456789012, '01123456789'),  -- Argentina
-(4, 'Ana', 'García', 'Ramírez', 4567890123, '005712345678'),  -- Colombia
-(5, 'Luis', 'Hernández', 'Díaz', 5678901234, '005212345678'),  -- México
-(6, 'Laura', 'Jiménez', 'Cruz', 6789012345, '0034912345678'),  -- España
-(2, 'Pedro', 'Morales', 'Vásquez', 7890123456, '004412345679'),  -- Inglaterra
-(4, 'Sofía', 'Rojas', 'Torres', 8901234567, '005712345679'),  -- Colombia
-(6, 'Javier', 'Salinas', 'Paredes', 9012345678, '0034912345679'),  -- España
-(1, 'Isabel', 'Mendoza', 'López', 9876543210, '001234567891');  -- USA
+(1, 'John', 'Smith', 'Doe', 123456789, '001234567890'),  -- USA
+(2, 'Emma', 'Johnson', 'Williams', 234567890, '004412345678'),  -- England
+(3, 'Carlos', 'González', 'Pérez', 345678901, '01123456789'),  -- Argentina
+(4, 'Ana', 'Torres', 'Martínez', 456789012, '005712345678'),  -- Colombia
+(5, 'Luis', 'Hernández', 'Díaz', 567890123, '005212345678'),  -- Mexico
+(6, 'Laura', 'Jiménez', 'Cruz', 678901234, '0034912345678'),  -- Spain
+(2, 'Peter', 'Brown', 'Jones', 789012345, '004412345679'),  -- England
+(4, 'Sofía', 'Rojas', 'Torres', 890123456, '005712345679'),  -- Colombia
+(6, 'Javier', 'Salinas', 'Paredes', 901234567, '0034912345679'),  -- Spain
+(1, 'Isabel', 'Mendoza', 'López', 987654321, '001234567891');  -- USA
 
---INSERTS DE ENLACES
+
+--INSERTS DE ENLACES. Revisar.
 INSERT INTO enlaces (id_significado, descripcion, id_flor_corte, codigo_color) VALUES
 (1, 'rosas rojas', 1, 'ca1b1b'),  
 (1, 'rosas blancas', 1, 'ffffff'),  
@@ -162,76 +243,128 @@ INSERT INTO enlaces (id_significado, descripcion, id_flor_corte, codigo_color) V
 (9, 'margaritas amarillas', 6, 'fbf500'), 
 (10, 'freesias lavanda', 7, 'e6e6fa');
 
---INSERTS DE CATALOGOS PRODUCTORES REVISAR!!!!!!!
+--INSERTS DE CATALOGOS PRODUCTORES
 
 INSERT INTO catalogos_productores (id_productor, vbn, nombre_propio, descripcion, id_flor, codigo_color) VALUES
-(1, 101705, 'Velvet Rose', 'Productor especializado en rosas y claveles.', 1, 'c5388b'), -- Rosa (Rosa)
-(1, 100603, 'Sunny', 'Productor especializado en rosas y claveles.', 2, 'c5388b'), -- Clavel (Rosa)
-(1, 102210, 'Daring Delight', 'Productor especializado en flores exóticas.', 7, 'fbf500'), -- Freesia (Amarillo)
+(1, 101705, 'Velvet Rose', 'Símbolo eterno del amor y la pasión, cautiva con su belleza intensa y fragancia dulce', 1, 'ca1b1b'), -- Rosa, color rojo, catalogo de rosas del productor 1
+(1, 102940, 'Aurora Rose', 'Símbolo de lo imposible y lo misterioso, fascina con su color único y enigmático', 1, '0000ff'), -- Rosa, color azul, catalogo de rosas del productor 1
 
+(1, 101818, 'Joy', 'Símbolo de alegría y optimismo, irradia energía y luz', 5, 'fbf500'), -- Girasol, color amarillo, catalogo de girasoles del productor 1
+(1, 105986, 'Garden Oasis', 'Con su tono cálido y terroso, evoca la rusticidad y la conexión con la naturaleza', 5, 'a52a2a'), -- Girasol, color marron, catalogo de girasoles del productor 1
 
-(2, 102603, 'Luna', 'Ofrece una variedad de hortensias.', 8, '0000ff'), -- Hortensia (Azul)
-(2, 102004, 'Celestial Bloom', 'Famoso por sus lirios y tulipanes.', 3, 'ffffff'), -- Lirio (Blanco)
-(2, 102205, 'Scarlet', 'Famoso por sus lirios y tulipanes.', 4, 'fbf500'), -- Tulipán (Amarillo)
+(2, 100603, 'Sunny', 'Símbolo de alegría y amistad, destaca por su brillo radiante y su simplicidad encantadora', 6, 'fbf500'), -- Margarita, color amarillo, catalogo de margaritas del productor 2
+(2, 102210, 'Daring Delight', 'Símbolo de pureza y inocencia, cautiva con su delicadeza y frescura', 6, 'ffffff'), -- Margarita, color blanco, catalogo de margaritas del productor 2
 
-(3, 102706, 'Berry Blush', 'Experto en girasoles y margaritas.', 5, 'ffa500'), -- Girasol (Naranja)
-(3, 102412, 'Sunshine Sorbet', 'Experto en girasoles y margaritas.', 6, 'ffffff'), -- Margarita (Blanco)
-(3, 101402, 'Mellow Yellow', 'Conocido por su crisantemo de calidad.', 9, '800080'); -- Crisantemo (Púrpura)
+(2, 102603, 'Luna', 'Con su vibrante color y forma exuberante, simboliza la gratitud y la comprensión', 8, '0000ff'), -- Hortensia, color azul, catalogo de hortensias del productor 2
+(2, 102004, 'Celestial Bloom', 'Con su suave tono morado y fragancia sutil, evoca serenidad y encanto', 8, 'e6e6fa'), -- Hortensia, color lavanda, catalogo de hortensias del productor 2
+
+(3, 102706, 'Berry Blush', 'Símbolo de amor y admiración, destaca por su delicada belleza y fragancia dulce', 2, 'c5388b'), -- Clavel, color rosa, catalogo de claveles del productor 3
+(3, 102412, 'Sunshine Sorbet', 'Símbolo de amistad y alegría, resplandece con su vibrante color y forma elegante', 2, 'fbf500'), -- Clavel, color amarillo, catalogo de claveles del prodcutor 3
+
+(3, 102205, 'Scarlet', 'Con su brillante color y forma elegante, simboliza la energía y la alegría', 4, 'ffa500'), -- Tulipán, color naranja, catalogo de tulipanes del pruductor 3
+(3, 101402, 'Floral Breeze', 'Símbolo de nobleza y misterio, cautiva con su profundo color y elegancia', 4, '800080'); -- Tulipan, color purpura, catalogo de tulipanes del productor 3
 
 --INSERTS DE DETALLES CONTRATOS
-INSERT INTO det_contratos (id_sub, id_prod, vbn) VALUES
-(1, 1, 102356),  
-(1, 2, 105676),  
-(1, 2, 102706),  
-(2, 1, 107786),  
-(2, 3, 101101),  
-(2, 3, 102433),  
-(3, 2, 102777), 
-(3, 2, 104755), 
-(3, 2, 103806);
 
---INSERTS DE FACTURAS SUBASTAS
+INSERT INTO det_contratos (id_sub, id_prod, id_contrato, vbn, cantidad) VALUES
+(3, 2, 1, 100603, 1000), --Productor 2 ofreciendo su Catalogo de Margaritas Sunny a Subastador 3, relacion en contrato 1 cancelado
+
+(1, 1, 2, 101705, 1500), --Productor 1 ofreciendo su Catalogo de Rosas Velvet Rose a Subastador 1, relacion en contrato 2 cancelado
+
+(2, 1, 3, 102940, 800), --Productor 1 ofreciendo su Catalogo de Rosas Aurora Rose a Subastador 2, relacion en contrato 3 vencido
+
+(2, 3, 4, 102706, 850), --Productor 3 ofreciendo su catalogo de Claveles Berry Blush a Subastador 2, relacion en contrato 4 vencido 
+(2, 3, 4, 102412, 700), --Productor 3 ofreciendo su catalogo de Claveles Sunshine Sorbet a Subastador 2, relacion en contrato 4 vencido 
+
+
+(1, 3, 5, 102205, 600), --Productor 3 ofreciendo su catalogo de Tulipanes Scarlet a Subastador 1, relacion en contrato 5 valido
+(1, 3, 5, 101402, 1200), --Productor 3 ofreciendo su catalogo de Tulipanes Floral Breeze a Subastador 1, relacion en contrato 5 valido
+
+(2, 1, 6, 101705, 1350), --Productor 1 ofreciendo su catalogo de Rosas Velvet Rose a Subastador 2, relacion en contrato 6 valido
+(2, 1, 6, 102940, 1350), --Productor 1 ofreciendo su catalogo de Rosas Aurora Rose a Subastador 2, relacion en contrato 6 valido
+(2, 1, 6, 101818, 1600), --Productor 1 ofreciendo su catalogo de Girasoles Joy a Subastador 2, relacion en contrato 6 valido
+(2, 1, 6, 105986, 1600), --Productor 1 ofreciendo su catalogo de Girasoles Garden Oasis a Subastador 2, relacion en contrato 6 valido
+
+(2, 2, 7, 100603, 2000), --Productor 2 ofreciendo su catalogo de Margaritas Sunny a Subastador 2, relacion en contrato 7 valido
+(2, 2, 7, 102210, 2000), --Productor 2 ofreciendo su catalogo de Margaritas Daring Delight a Subastador 2, relacion en contrato 7 valido
+(2, 2, 7, 102603, 1700), --Productor 2 ofreciendo su catalogo de Hortensias Luna a Subastador 2, relacion en contrato 7 valido
+(2, 2, 7, 102004, 1700), --Productor 2 ofreciendo su catalogo de Hortensias Celestial Bloom a Subastador 2, relacion en contrato 7 valido
+
+(3, 3, 8, 102706, 850), --Productor 3 ofreciendo su catalogo de Claveles Berry Blush a Subastador 3, relacion en contrato 8 valido
+(3, 3, 8, 102412, 850), --Productor 3 ofreciendo su catalogo de Claveles Sunshine Sorbet a Subastador 3, relacion en contrato 8 valido
+
+(2, 3, 9, 102205, 600), --Productor 3 ofreciendo su catalogo de Tulipanes Scarlet a Subastador 2, relacion en contrato 9 valido
+(2, 3, 9, 101402, 600) --Productor 3 ofreciendo su catalogo de Tulipanes Floral Breeze a Subastador 2, relacion en contrato 9 valido
+;
+
 
 INSERT INTO facturas_subastas (num_factura, fecha_emision, total, id_sub, id_floristeria, envio) VALUES
-(20241016, '2024-03-15', 175.00, 3 , 1, 'SI'), --Factura Subastadora 3 a Floristeria 1
-(20241017, '2024-04-01', 90.50, 1, 3, 'NO'), --Factura Subastadora 1 a Floristeria 3
-(20241018, '2024-05-10', 120.00, 1, 5 , 'SI'), --Factura Subastadora 1 a Floristeria 5
-(20241019, '2024-05-17', 65.25, 2, 2, 'NO'), --Factura Subastadora 2 a Floristeria 2
-(20241020, '2024-06-01', 110.75, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
+(20241016, '2024-03-15', 440, 3 , 1, 'SI'), --Factura Subastadora 3 a Floristeria 1
+(20241017, '2024-04-01', 700, 1, 3, 'NO'), --Factura Subastadora 1 a Floristeria 3
+(20241018, '2024-05-10', 770, 1, 5 , 'SI'), --Factura Subastadora 1 a Floristeria 5
+(20241019, '2024-05-17', 800, 2, 2, 'NO'), --Factura Subastadora 2 a Floristeria 2
+(20241020, '2024-06-01', 715, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
+(20241021, '2024-07-19', 550, 2, 6 , 'SI'), --Factura Subastadora 2 a Floristeria 6
 
-(20241021, '2024-06-03', 140.00, 1, 5, 'NO'), --Factura Subastadora 1 a Floristeria 5
-(20241022, '2024-06-18', 85.00, 2, 2, 'SI'), --Factura Subastadora 2 a Floristeria 2
-(20241023, '2024-06-27', 200.00, 1, 1 , 'NO'), --Factura Subastadora 1 a Floristeria 1
-(20241024, '2024-06-29', 150.50, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
-(20241025, '2024-07-02', 175.75, 3, 3, 'NO'), --Factura Subastadora 3 a Floristeria 3
-
-(20241026, '2024-07-19', 90.00, 2, 6 , 'SI'), --Factura Subastadora 2 a Floristeria 6
-(20241027, '2024-07-22', 130.25, 1, 1 , 'NO'), --Factura Subastadora 1 a Floristeria 1
-(20241028, '2024-07-27', 220.00, 2, 4 , 'SI'), --Factura Subastadora 2 a Floristeria 4
-(20241029, '2024-07-30', 140.50, 1, 3 , 'NO'), --Factura Subastadora 1 a Floristeria 3
-(20241030, '2024-08-24', 75.75, 3, 2, 'SI'), --Factura Subastadora 3 a Floristeria 2
-
-(20241031, '2024-08-25', 110.60, 3, 3, 'NO'), --Factura Subastadora 3 a Floristeria 3
-(20241032, '2024-09-26', 160.80, 2, 4 , 'SI'), --Factura Subastadora 2 a Floristeria 4
-(20241033, '2024-10-19', 95.00, 3, 2, 'NO'), --Factura Subastadora 3 a Floristeria 2
-(20241034, '2024-11-30', 125.00, 2, 6, 'SI'), --Factura Subastadora 2 a Floristeria 6
-(20241035, '2024-12-02', 180.25, 3, 1 , 'NO') --Factura Subastadora 3 a Floristeria 1
+(20241022, '2024-06-03', 1200, 1, 5, 'NO'), --Factura Subastadora 1 a Floristeria 5
+(20241023, '2024-06-18', 1100, 2, 2, 'SI'), --Factura Subastadora 2 a Floristeria 2
+(20241024, '2024-06-27', 800, 1, 1 , 'NO'), --Factura Subastadora 1 a Floristeria 1
+(20241025, '2024-06-29', 880, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
+(20241026, '2024-07-02', 500, 3, 3, 'NO'), --Factura Subastadora 3 a Floristeria 3
+(20241027, '2024-11-30', 1210, 2, 6, 'SI') --Factura Subastadora 2 a Floristeria 6
 ;
 
 --INSERTS DE LOTES FLORES
 
-INSERT INTO lotes_flor(cantidad, precio_inicial, bi, precio_final, id_sub, id_prod, id_contrato, vbn) VALUES
-(100, 55, 0.5, 120, 1, 1, 7, 104355),  
-(32, 100.55, 0.8, 200, 1, 1, 7, 103702),  
-(50, 500.7, 0.9, 500.7, 1, 3, 5, 108205),  
-(2, 145.99, 0.55, 400, 2, 2, 1, 101005),  
-(70, 90.22, 0.82, 300, 2, 2, 1, 102344),  
-(12, 700, 1, 850, 2, 3, 5, 102205),  
-(7, 240.79, 0.77, 240.7, 3, 3, 5, 100603), 
-(66, 85.21, 0.5, 90.99, 3, 3, 5, 101705), 
-(10, 44.99, 0.5, 44.99, 3, 3, 5, 102412);
+INSERT INTO lotes_flor (cantidad, precio_inicial, BI, precio_final, id_sub, id_prod, id_contrato, vbn, num_factura) VALUES
+-- Lotes para la Factura 20241016
+(100, 50.00, 0.70, 200, 3, 3, 8, 102706, 20241016),  
+(200, 40.00, 0.80, 200, 3, 3, 8, 102706, 20241016),  
 
---INSERTS DE CATALOGOS FLORISTERIAS
+--Lotes para la Factura 20241017
+(150, 40.00, 0.85, 300, 1, 3, 5, 102205, 20241017),  
+(200, 60.00, 0.90, 400, 1, 3, 5, 102205, 20241017),  
+
+--Lotes para la Factura 20241018
+(300, 50.00, 0.75, 300, 1, 3, 5, 102205, 20241018),  
+(400, 70.00, 0.60, 400, 1, 3, 5, 101402, 20241018),  
+--Lotes para la Factura 20241019
+(280, 40.00, 0.90, 400, 2, 1, 6, 101705, 20241019),  
+(120, 30.00, 0.95, 400, 2, 1, 6, 101818, 20241019),  
+
+--Lotes para la Factura 20241020
+(400, 50.00, 0.70, 200, 3, 3, 8, 102706, 20241020),  
+(450, 60.00, 0.80, 450, 3, 3, 8, 102706, 20241020),  
+--Lotes para la Factura 20241021
+(300, 40.00, 0.85, 200, 2, 2, 7, 102603, 20241021), 
+(400, 60.00, 0.90, 300, 2, 1, 6, 105986, 20241021),  
+
+--Lotes para la Factura 20241022
+(500, 50.00, 0.95, 700, 1, 3, 5, 102205, 20241022),  
+(700, 60.00, 0.85, 500, 1, 3, 5, 101402, 20241022),  
+
+--Lotes para la Factura 20241023
+(550, 40.00, 0.75, 400, 2, 2, 7, 102210, 20241023),  
+(600, 50.00, 0.80, 600, 2, 2, 7, 102603, 20241023),  
+
+--Lotes para la Factura 20241024
+(300, 60.00, 0.70, 450, 1, 3, 5, 101402, 20241024),  
+(550, 55.00, 0.68, 350, 1, 3, 5, 101402, 20241024),  
+
+--Lotes para la Factura 20241025
+(350, 70.00, 0.75, 350, 3, 3, 8, 102412, 20241025),  
+(300, 75.00, 0.80, 400, 3, 3, 8, 102412, 20241025),  
+
+--Lotes para la Factura 20241026
+(200, 40.00, 0.85, 200, 3, 3, 8, 102706, 20241026),  
+(300, 60.00, 0.90, 300, 3, 3, 8, 102412, 20241026),
+
+--Lotes para la Factura 20241027
+(600, 50.00, 0.95, 700, 2, 1, 6, 102940, 20241027),  
+(400, 60.00, 0.85, 300, 2, 3, 9, 101402, 20241027)
+;
+
+--INSERTS DE CATALOGOS FLORISTERIAS. Revisar.
 
 INSERT INTO catalogos_floristerias (id_floristeria, nombre, id_flor_corte, codigo_color) VALUES
 (1, 'Salina', 7, '008000'),  -- Verde
@@ -245,7 +378,7 @@ INSERT INTO catalogos_floristerias (id_floristeria, nombre, id_flor_corte, codig
 (5, 'Cairo', 2, 'a52a2a'),      -- Marrón
 (6, 'Margarita clasica', 6, 'ffffff'); -- Blanco
 
---INSERTS DE HISTORICOS PRECIOS 
+--INSERTS DE HISTORICOS PRECIOS. Revisar
 
 INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio_unitario, tamano_tallo, fecha_final) VALUES
 (1, 1, 05/11/2024, 77.02, 23, NULL),  
@@ -259,7 +392,7 @@ INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio
 (6, 5, 01/02/2024, 10.9, 75.45, NULL),  
 (6, 7, 22/01/2024, 52.6, 41.8, NULL); 
 
---INSERTS DE BOUQUETS
+--INSERTS DE BOUQUETS. Revisar.
 
 INSERT INTO bouquets (id_floristeria, id_catalogo, cantidad, descripcion, tamano_tallo) VALUES
 (1, 1, 10, 'Bouquet de flores tropicales', 23),  
