@@ -151,7 +151,16 @@ INSERT INTO contactos_empleados (id_floristeria, primer_nombre_rep, primer_apell
 (1, 'Isabel', 'Mendoza', 'López', 9876543210, '001234567891');  -- USA
 
 --INSERTS DE ENLACES
-
+INSERT INTO enlaces (id_significado, descripcion, id_flor_corte, codigo_color) VALUES
+(1, 'rosas rojas', 1, 'ca1b1b'),  
+(1, 'rosas blancas', 1, 'ffffff'),  
+(2, 'claveles rosas', 2, 'c5388b'),  
+(5, 'lirios blancos', 3, 'ffffff'),  
+(7, 'tulipanes rojos', 4, 'ca1b1b'),  
+(8, 'girasoles amarillos', 5, 'fbf500'),  
+(8, 'girasoles naranjas', 5, 'ffa500'), 
+(9, 'margaritas amarillas', 6, 'fbf500'), 
+(10, 'freesias lavanda', 7, 'e6e6fa');
 
 --INSERTS DE CATALOGOS PRODUCTORES REVISAR!!!!!!!
 
@@ -170,6 +179,16 @@ INSERT INTO catalogos_productores (id_productor, vbn, nombre_propio, descripcion
 (3, 101402, 'Mellow Yellow', 'Conocido por su crisantemo de calidad.', 9, '800080'); -- Crisantemo (Púrpura)
 
 --INSERTS DE DETALLES CONTRATOS
+INSERT INTO det_contratos (id_sub, id_prod, vbn) VALUES
+(1, 1, 102356),  
+(1, 2, 105676),  
+(1, 2, 102706),  
+(2, 1, 107786),  
+(2, 3, 101101),  
+(2, 3, 102433),  
+(3, 2, 102777), 
+(3, 2, 104755), 
+(3, 2, 103806);
 
 --INSERTS DE FACTURAS SUBASTAS
 
@@ -201,6 +220,17 @@ INSERT INTO facturas_subastas (num_factura, fecha_emision, total, id_sub, id_flo
 
 --INSERTS DE LOTES FLORES
 
+INSERT INTO lotes_flor(cantidad, precio_inicial, bi, precio_final, id_sub, id_prod, id_contrato, vbn) VALUES
+(100, 55, 0.5, 120, 1, 1, 7, 104355),  
+(32, 100.55, 0.8, 200, 1, 1, 7, 103702),  
+(50, 500.7, 0.9, 500.7, 1, 3, 5, 108205),  
+(2, 145.99, 0.55, 400, 2, 2, 1, 101005),  
+(70, 90.22, 0.82, 300, 2, 2, 1, 102344),  
+(12, 700, 1, 850, 2, 3, 5, 102205),  
+(7, 240.79, 0.77, 240.7, 3, 3, 5, 100603), 
+(66, 85.21, 0.5, 90.99, 3, 3, 5, 101705), 
+(10, 44.99, 0.5, 44.99, 3, 3, 5, 102412);
+
 --INSERTS DE CATALOGOS FLORISTERIAS
 
 INSERT INTO catalogos_floristerias (id_floristeria, nombre, id_flor_corte, codigo_color) VALUES
@@ -217,5 +247,29 @@ INSERT INTO catalogos_floristerias (id_floristeria, nombre, id_flor_corte, codig
 
 --INSERTS DE HISTORICOS PRECIOS 
 
+INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio_unitario, tamano_tallo, fecha_final) VALUES
+(1, 1, 05/11/2024, 77.02, 23, NULL),  
+(2, 2, 11/6/2024, 80.55, 14.5, 24/11/2024),  
+(2, 2, 24/11/2024, 66.7, 14.5, NULL),  
+(3, 2, 17/02/2024, 20.74, 30.22, 02/05/2024),  
+(3, 2, 02/05/2024, 15.5, 30.13, NULL),   
+(4, 1, 07/12/2024, 22.6, 5.5, NULL),   
+(5, 3, 30/01/2024, 32.5, 100, NULL),  
+(5, 4, 08/07/2024, 21.1, 20, NULL),  
+(6, 5, 01/02/2024, 10.9, 75.45, NULL),  
+(6, 7, 22/01/2024, 52.6, 41.8, NULL); 
+
 --INSERTS DE BOUQUETS
+
+INSERT INTO bouquets (id_floristeria, id_catalogo, cantidad, descripcion, tamano_tallo) VALUES
+(1, 1, 10, 'Bouquet de flores tropicales', 23),  
+(1, 1, 5, 'Bouquet de flores tropicales', 14),  
+(2, 1, 20, 'Bouquet de flores tropicales', 55),  
+(2, 2, 5, 'Bouquet de flores primaverales', 30),  
+(3, 2, 7, 'Bouquet de flores primaverales', 10),   
+(4, 3, 25, 'Bouquet de rosas', 5),   
+(4, 3, 4, 'Bouquet de rosas', 100),  
+(5, 4, 3, 'Bouquet de girasoles', 250),  
+(5, 5, 5, 'Bouquet de freesias', 75),  
+(5, 7, 5, 'Bouquet de hortensias', 41); 
 
