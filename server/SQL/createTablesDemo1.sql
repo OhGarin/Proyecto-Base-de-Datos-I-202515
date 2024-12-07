@@ -72,7 +72,7 @@ CREATE TABLE pagos_multas(
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
 	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
-	CONSTRAINT check_monto CHECK(monto_euros>0)
+	--CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
 CREATE TABLE afiliacion(
@@ -116,6 +116,7 @@ CREATE TABLE det_contratos(
 	id_prod INT NOT NULL,
 	id_contrato INT NOT NULL,
 	vbn INT NOT NULL,
+	cantidad NUMERIC(4) NOT NULL,
 	CONSTRAINT pk_det_contratos PRIMARY KEY (id_sub,id_prod,id_contrato,vbn)
 );
 
