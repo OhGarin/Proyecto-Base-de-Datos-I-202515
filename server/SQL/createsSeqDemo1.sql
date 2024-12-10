@@ -68,3 +68,17 @@ CREATE SEQUENCE seq_bouquet
 	START WITH 1
 	INCREMENT BY 1;
 
+DROP SEQUENCE IF EXISTS seq_cliente_natural;
+CREATE SEQUENCE seq_cliente_natural
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_cliente_compania;
+CREATE SEQUENCE seq_cliente_compania
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_detfacturas_floristeria;
+CREATE SEQUENCE seq_detfacturas_floristeria
+	START WITH 1
+	INCREMENT BY 1;
