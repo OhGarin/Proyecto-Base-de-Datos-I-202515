@@ -1,6 +1,5 @@
-const express = require('express');
+const express = require("express");
 const cors = require("cors");
-const path = require("path");
 
 //instancia app para configar servidor, definir rutas, manejar solicitudes, etc
 const app = express();
@@ -16,6 +15,5 @@ app.use("/", require("./routes"));
 
 //inicializacion del server
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
-
