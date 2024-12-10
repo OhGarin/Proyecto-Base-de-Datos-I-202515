@@ -1,11 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const { controller } = require("../controllers/controller");
+const { controllerSql } = require("../controllers/controller");
 
-//Se crea clase Controller y se llaman a los métodos de esa clase
-var rep = new controller();
-
-router.post('/clientes', controller.createCliente);
+router.post("/sql", controllerSql);
 
 module.exports = router;

@@ -72,7 +72,7 @@ CREATE TABLE pagos_multas(
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
 	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
-	--CONSTRAINT check_monto CHECK(monto_euros>0)
+	CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
 CREATE TABLE afiliacion(
@@ -103,7 +103,7 @@ CREATE TABLE enlaces(
 
 CREATE TABLE catalogos_productores(
 	id_productor INT NOT NULL,
-	vbn INT DEFAULT nextval('seq_catalogoprod') NOT NULL,
+	vbn INT NOT NULL,
 	nombre_propio VARCHAR(40) NOT NULL UNIQUE,
 	descripcion VARCHAR(300) NOT NULL,
 	id_flor INT NOT NULL,
@@ -144,7 +144,8 @@ CREATE TABLE lotes_flor(
 	num_factura NUMERIC(12) NOT NULL,
 	CONSTRAINT check_bi CHECK(BI >= 0.5 AND BI <=1),
 	CONSTRAINT check_precio_inicial CHECK(precio_inicial>0),
-	CONSTRAINT check_precio_final CHECK(precio_final>0)
+	CONSTRAINT check_precio_final CHECK(precio_final>0),
+	CONSTRAINT check_validar_precios CHECK(precio_final>=precio_inicial)
 );
 
 CREATE TABLE catalogos_floristerias(
