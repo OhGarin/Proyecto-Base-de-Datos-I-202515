@@ -144,8 +144,7 @@ CREATE TABLE lotes_flor(
 	num_factura NUMERIC(12) NOT NULL,
 	CONSTRAINT check_bi CHECK(BI >= 0.5 AND BI <=1),
 	CONSTRAINT check_precio_inicial CHECK(precio_inicial>0),
-	CONSTRAINT check_precio_final CHECK(precio_final>0),
-	CONSTRAINT check_validar_precios CHECK(precio_final>=precio_inicial)
+	CONSTRAINT check_precio_final CHECK(precio_final>0)
 );
 
 CREATE TABLE catalogos_floristerias(
