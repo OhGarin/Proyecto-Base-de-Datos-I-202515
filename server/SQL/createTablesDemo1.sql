@@ -74,7 +74,7 @@ CREATE TABLE pagos_multas(
 	monto_euros FLOAT NOT NULL,
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
-	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
+	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos)
 	--CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
