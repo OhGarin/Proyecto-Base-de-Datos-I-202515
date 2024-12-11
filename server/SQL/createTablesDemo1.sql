@@ -3,15 +3,6 @@ CREATE TABLE paises(
  	 nombre_pais VARCHAR(30) NOT NULL UNIQUE
 );
 
-CREATE TABLE flores_corte(
-	id_flor_corte INT DEFAULT nextval('seq_flores_corte') CONSTRAINT pk_florcorte PRIMARY KEY,
-	nombre_comun VARCHAR(40) NOT NULL UNIQUE,
-	genero_especie VARCHAR(40) NOT NULL UNIQUE,
-	etimologia VARCHAR(200) NOT NULL,
-	tem_conservacion NUMERIC(4,2) NOT NULL,
-	colores VARCHAR(200) NOT NULL
-);
-
 CREATE TABLE colores(
 	codigo_color VARCHAR(6) CONSTRAINT pk_colores PRIMARY KEY,
 	nombre VARCHAR(15) NOT NULL UNIQUE,
@@ -25,17 +16,28 @@ CREATE TABLE significados(
 	CONSTRAINT check_tipo CHECK(tipo in('ocas','sent'))
 );
 
+CREATE TABLE flores_corte(
+	id_flor_corte INT DEFAULT nextval('seq_flores_corte') CONSTRAINT pk_florcorte PRIMARY KEY,
+	nombre_comun VARCHAR(40) NOT NULL UNIQUE,
+	genero_especie VARCHAR(40) NOT NULL UNIQUE,
+	etimologia VARCHAR(200) NOT NULL,
+	tem_conservacion NUMERIC(4,2) NOT NULL,
+	colores VARCHAR(200) NOT NULL
+);
+
 CREATE TABLE subastadoras(
 	id_sub INT DEFAULT nextval('seq_subastadoras') CONSTRAINT pk_subastadoras PRIMARY KEY,
 	nombre_sub VARCHAR(40) NOT NULL,
-	id_pais SMALLINT NOT NULL
+	id_pais SMALLINT NOT NULL,
+	url_imagen VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE productores(
 	id_prod INT DEFAULT nextval('seq_productores') CONSTRAINT pk_productores PRIMARY KEY,
 	nombre_prod VARCHAR(40) NOT NULL UNIQUE,
 	pagweb_prod VARCHAR(40) NOT NULL UNIQUE,
-	id_pais SMALLINT NOT NULL
+	id_pais SMALLINT NOT NULL,
+	url_imagen VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE floristerias(
@@ -44,7 +46,8 @@ CREATE TABLE floristerias(
 	pagweb_floristeria VARCHAR(40) NOT NULL UNIQUE,
 	telefono_floristeria VARCHAR(15) NOT NULL UNIQUE,
 	email_floristeria VARCHAR(40) NOT NULL UNIQUE,
-	id_pais SMALLINT NOT NULL
+	id_pais SMALLINT NOT NULL,
+	url_imagen VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE contratos(
@@ -72,7 +75,7 @@ CREATE TABLE pagos_multas(
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
 	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
-	CONSTRAINT check_monto CHECK(monto_euros>0)
+	--CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
 CREATE TABLE afiliacion(
@@ -179,3 +182,45 @@ CREATE TABLE bouquets(
 	CONSTRAINT check_tamano_tallo CHECK(tamano_tallo>0),
 	CONSTRAINT check_cantidad CHECK (cantidad>0)
 );
+
+CREATE TABLE clientes_natural_floristerias(
+	num_cliente NUMERIC(3) CONSTRAINT pk_cliente_natural PRIMARY KEY,
+	doc_identidad NUMERIC(12) NOT NULL UNIQUE,
+	primer_nombre VARCHAR(15) NOT NULL,
+	primer_apellido VARCHAR(20) NOT NULL,
+	segundo_apellido VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE clientes_compania_floristerias(
+	num_empresa NUMERIC(4) CONSTRAINT pk_cliente_empresa PRIMARY KEY,
+	nombre_empresa VARCHAR(50) NOT NULL,
+	razon_social VARCHAR(70) NOT NULL
+);
+
+CREATE TABLE facturas_floristerias(
+	id_floristeria INT NOT NULL,
+	num_factura NUMERIC(4) NOT NULL,
+	fecha_emision DATE NOT NULL,
+	monto_total NUMERIC(6,2) NOT NULL,
+	num_cliente NUMERIC(3),
+	num_empresa NUMERIC(3),
+	CONSTRAINT pk_facturas_floristerias PRIMARY KEY(id_floristeria, num_factura)
+);
+
+CREATE TABLE det_facturas_floristerias(
+	id_det_factura INT DEFAULT nextval('seq_detfacturas_floristeria') NOT NULL,
+	cantidad NUMERIC(3) NOT NULL,
+	id_floristeria INT NOT NULL,
+	num_factura NUMERIC(12) NOT NULL,
+	id_catalogo INT,
+	id_bouquet INT,
+	subtotal NUMERIC(5,2),
+	valor_calidad NUMERIC(2,1),
+	valor_precio NUMERIC(2,1),
+	promedio NUMERIC(2,1),
+	CONSTRAINT pk_detfacturas_floristerias PRIMARY KEY (id_floristeria, num_factura, id_det_factura),
+	CONSTRAINT check_valor_calidad CHECK (valor_calidad BETWEEN 1 AND 5),  
+	CONSTRAINT check_valor_precio CHECK (valor_precio BETWEEN 1 AND 5),     
+	CONSTRAINT check_promedio CHECK (promedio BETWEEN 1 AND 5)               
+);
+

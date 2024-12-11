@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS det_facturas_floristerias CASCADE;
+DROP TABLE IF EXISTS facturas_floristerias CASCADE;
+DROP TABLE IF EXISTS clientes_compania_floristerias CASCADE;
+DROP TABLE IF EXISTS clientes_natural_floristerias CASCADE;
 DROP TABLE IF EXISTS bouquets CASCADE;
 DROP TABLE IF EXISTS historicos_precio CASCADE;
 DROP TABLE IF EXISTS catalogos_floristerias CASCADE;
