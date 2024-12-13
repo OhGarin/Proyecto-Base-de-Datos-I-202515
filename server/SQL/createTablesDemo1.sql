@@ -162,10 +162,10 @@ CREATE TABLE catalogos_floristerias(
 CREATE TABLE historicos_precio(
 	id_floristeria INT NOT NULL,
 	id_catalogo INT NOT NULL,
-	fecha_inicio DATE NOT NULL,
+	fecha_inicio TIMESTAMP NOT NULL,
 	precio_unitario NUMERIC(5,2) NOT NULL,
 	tamano_tallo NUMERIC(5,2),
-	fecha_final DATE,
+	fecha_final TIMESTAMP,
 	CONSTRAINT pk_historico_precio PRIMARY KEY (id_floristeria,id_catalogo,fecha_inicio),
 	CONSTRAINT check_precio_unitario_flor CHECK(precio_unitario>0),
 	CONSTRAINT check_tamano_tallo CHECK(tamano_tallo>0)

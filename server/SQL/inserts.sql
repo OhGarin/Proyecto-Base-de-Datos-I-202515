@@ -432,7 +432,8 @@ BEGIN;
 INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio_unitario, tamano_tallo, fecha_final) VALUES
 -- Radiant Carnation
 (1, 1, '2024-01-01', 12.50, 50.0, '2024-03-31'),  
-(1, 1, '2024-04-01', 13.00, 50.0, NULL),           
+(1, 1, '2024-04-01 00:00:00', 13.00, 50.0, NULL),           
+(1, 1, '2024-04-01 00:00:01', 10.00, 30.0, NULL),           
 -- Brilliant Tulip
 (1, 2, '2024-01-15', 10.00, 45.0, '2024-03-15'), 
 (1, 2, '2024-03-16', 11.00, 45.0, NULL),          
@@ -441,7 +442,8 @@ INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio
 (2, 3, '2024-04-11', 16.00, 60.0, NULL),           
 -- Summer Sunflower
 (2, 4, '2024-02-01', 8.00, 70.0, '2024-05-01'),  
-(2, 4, '2024-05-02', 9.00, 70.0, NULL),           
+(2, 4, '2024-05-02 00:00:00', 9.00, 70.0, NULL),           
+(2, 4, '2024-05-02 00:00:01', 10.00, 80.0, NULL),           
 --Joyful Daisy
 (2, 5, '2024-01-20', 5.00, 30.0, '2024-03-20'),  
 (2, 5, '2024-03-21', 5.50, 30.0, NULL),           
@@ -450,7 +452,8 @@ INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio
 (2, 6, '2024-04-11', 21.00, 80.0, NULL),           
 -- Radiant Tulip
 (3, 7, '2024-01-05', 10.50, 45.0, '2024-03-05'),
-(3, 7, '2024-03-06', 11.50, 45.0, NULL),
+(3, 7, '2024-03-06 00:00:00', 11.50, 45.0, NULL),
+(3, 7, '2024-03-06 00:00:01', 13.00, 60.0, NULL),
 -- Charming Carnation
 (3, 8, '2024-01-15', 12.75, 50.0, '2024-04-15'),
 (3, 8, '2024-04-16', 13.25, 50.0, NULL),
@@ -471,7 +474,8 @@ INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio
 (5, 13, '2024-05-21', 11.25, 45.0, NULL),
 -- Aqua Hydrangea
 (6, 14, '2024-02-05', 22.00, 80.0, '2024-04-05'),
-(6, 14, '2024-04-06', 23.00, 80.0, NULL),
+(6, 14, '2024-04-06 00:00:00', 23.00, 80.0, NULL),
+(6, 14, '2024-04-06 00:00:01', 25.00, 85.0, NULL),
 -- Mistery Sunflower
 (6, 15, '2024-03-01', 9.00, 70.0, '2023-06-01'),
 (6, 15, '2023-06-02', 9.50, 70.0, NULL);
