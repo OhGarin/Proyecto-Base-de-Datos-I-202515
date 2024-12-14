@@ -134,7 +134,31 @@ ORDER BY
     ROUND(AVG(d.promedio), 2) DESC,
     fc.nombre_comun ASC
 
---Subreporte 2. Nivel 3. FALTA ESTE.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--Subreporte 2. Nivel 3.
+--Query para obtener los precios unitarios con tamaños de tallo de una flor en una floristería (tentativo)
+-- SELECT 
+-- c.nombre AS nombre_propio_floristeria,
+-- f.genero_especie,
+-- f.nombre_comun,
+-- co.nombre AS nombre_color,
+-- h.precio_unitario,
+-- h.tamano_tallo
+-- FROM
+-- catalogos_floristerias c
+-- INNER JOIN historicos_precio h ON h.id_catalogo = c.id_catalogo
+-- INNER JOIN flores_corte f ON c.id_flor_corte = f.id_flor_corte
+-- INNER JOIN colores co ON c.codigo_color = co.codigo_color
+-- WHERE h.fecha_final IS NULL
+-- AND h.id_floristeria = (
+--     SELECT id_floristeria 
+--     FROM floristerias 
+--     WHERE nombre_floristeria = $P{nombre_floristeria} 
+-- )
+-- AND c.id_catalogo = (
+--     SELECT id_catalogo 
+--     FROM catalogos_floristerias 
+--     WHERE nombre = $P{nombre_flor_floristeria} 
+-- )
 
 --TERMINAN QUERYS PARA : CATALOGO DE FLORISTERIA
 
