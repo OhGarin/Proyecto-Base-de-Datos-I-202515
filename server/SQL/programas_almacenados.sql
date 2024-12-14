@@ -356,7 +356,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+--Funcion para ejecutar el trigger que valida si es un dia laboral y/o si la factura fue realizada entre las 8:00 y las 16:00
+CREATE OR REPLACE FUNCTION validar_fecha_factura()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Verificar si la fecha de emisión es un día laborable (lunes a viernes)
+    IF EXTRACT(DOW FROM NEW.fecha_emision) IN (0, 6) THEN
+        RAISE EXCEPTION 'La factura solo puede ser emitida en días laborables (lunes a viernes)';
+    END IF;
 
+    -- Verificar si la hora de emisión está entre las 8:00 AM y las 3:00 PM
+    IF NEW.fecha_emision::time < '08:00:00' OR NEW.fecha_emision::time > '15:00:00' THEN
+        RAISE EXCEPTION 'La factura solo puede ser emitida entre las 8:00 AM y las 3:00 PM';
+    END IF;
 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion para ejecutar el trigger que valida si la fechas final es mayor que la fecha inicial en el historico precios 
+CREATE OR REPLACE FUNCTION validar_fechas_historicos_precio()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_final IS NOT NULL AND NEW.fecha_final <= NEW.fecha_inicio THEN
+        RAISE EXCEPTION 'La fecha final debe ser mayor que la fecha de inicio';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 
