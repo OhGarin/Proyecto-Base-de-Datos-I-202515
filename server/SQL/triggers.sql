@@ -76,3 +76,7 @@ CREATE TRIGGER check_fecha_historicos_precio
 BEFORE INSERT OR UPDATE ON historicos_precio
 FOR EACH ROW EXECUTE FUNCTION validar_fechas_historicos_precio();
 
+--Trigger para validar que una fecha de emision de una factura de subasta no sea mayor a la actual 
+CREATE TRIGGER check_fecha_factura_no_futura
+BEFORE INSERT OR UPDATE ON facturas_subastas
+FOR EACH ROW EXECUTE FUNCTION validar_fecha_factura_no_futura();
