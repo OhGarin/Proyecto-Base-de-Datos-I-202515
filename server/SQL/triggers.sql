@@ -65,3 +65,14 @@ BEFORE INSERT ON pagos_multas
 FOR EACH ROW
 WHEN (NEW.tipo = 'MUL') 
 EXECUTE FUNCTION trg_calcular_multa();
+
+--Trigger para validar que una factura de una subasta sea en un dia laborar y este entre las 8:00 y las 16:00
+CREATE TRIGGER check_fecha_factura
+BEFORE INSERT OR UPDATE ON facturas_subastas
+FOR EACH ROW EXECUTE FUNCTION validar_fecha_factura();
+
+--Trigger para validar que una fecha final sea mayor que una fecha inicial en el historico de precios 
+CREATE TRIGGER check_fecha_historicos_precio
+BEFORE INSERT OR UPDATE ON historicos_precio
+FOR EACH ROW EXECUTE FUNCTION validar_fechas_historicos_precio();
+
