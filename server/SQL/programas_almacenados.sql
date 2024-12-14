@@ -385,4 +385,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+--Funcion para ejecutar el trigger que valida si la fechas de emision es posterior a la actual 
+CREATE OR REPLACE FUNCTION validar_fecha_factura_no_futura()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_emision > CURRENT_TIMESTAMP THEN
+        RAISE EXCEPTION 'No se puede registrar una factura con una fecha futura: %', NEW.fecha_emision;
+    END IF;
 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
