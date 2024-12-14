@@ -125,7 +125,7 @@ CREATE TABLE det_contratos(
 
 CREATE TABLE facturas_subastas(
 	num_factura NUMERIC(12) CONSTRAINT pk_facturasub PRIMARY KEY,
-	fecha_emision DATE NOT NULL,
+	fecha_emision TIMESTAMP NOT NULL,
 	total FLOAT NOT NULL,
 	id_sub INT NOT NULL,
 	id_floristeria INT NOT NULL,
