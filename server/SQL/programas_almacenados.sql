@@ -454,7 +454,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION crear_lote_factura(
     nombre_subastadora VARCHAR(40),
     nombre_productor VARCHAR(40),
-    vbn_flor INT,
+    nombre_propio_flor VARCHAR(40),
     cantidad_flores INT,
     bi_lote FLOAT,
     precio_inicial FLOAT,
@@ -466,6 +466,7 @@ DECLARE
     id_subastadora INT;
     id_productor INT;
     id_cont INT;
+    vbn_flor INT;
     nuevo_lote lotes_flor;
 BEGIN
     -- Obtiene el id de la subastadora
@@ -477,6 +478,12 @@ BEGIN
     SELECT id_prod INTO id_productor
     FROM productores
     WHERE nombre_prod = nombre_productor;
+
+    -- Obtiene el vbn de la flor desde el catalogo del productor
+    SELECT vbn INTO vbn_flor
+    FROM catalogos_productores
+    WHERE id_productor = id_productor
+      AND nombre_propio = nombre_propio_flor;
 
     -- Obtiene el id del contrato activo del productor con la subastadora
     SELECT id_contrato INTO id_cont
@@ -514,7 +521,7 @@ $$ LANGUAGE plpgsql;
 -- Record que es necesario para generar_factura_subasta
 CREATE TYPE lote_flor AS (
     nombre_productor VARCHAR(40),
-    vbn_flor INT,
+    nombre_propio_flor VARCHAR(40),
     cantidad_flores INT,
     bi_lote FLOAT,
     precio_inicial FLOAT,
@@ -543,7 +550,7 @@ BEGIN
         PERFORM crear_lote_factura(
             nombre_subast,
             lote.nombre_productor,
-            lote.vbn_flor,
+            lote.nombre_propio_flor,
             lote.cantidad_flores,
             lote.bi_lote,
             lote.precio_inicial,
