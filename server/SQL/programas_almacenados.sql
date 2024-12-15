@@ -555,13 +555,3 @@ BEGIN
     RETURN NEXT factura;
 END;
 $$ LANGUAGE plpgsql;
-
-select * from generar_factura_subasta(
-    'Subastadora 1',
-    'Floristeria 1',
-    'SI',
-    ARRAY[
-        ('Productor 1', 1, 10, 0.75, 10.00, 15.00),
-        ('Productor 2', 2, 15, 0.80, 12.00, 18.00)
-    ]
-)
