@@ -396,3 +396,172 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Función que crea una factura de subasta sin lotes, con total en 0
+CREATE OR REPLACE FUNCTION crear_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_floristeria VARCHAR(40),
+    quiere_envio VARCHAR(2)
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    id_subastadora INT;
+    id_florist INT;
+    fecha_emision TIMESTAMP;
+    numero_factura_anterior NUMERIC(12);
+    nombre_florist VARCHAR(40);
+    nueva_factura facturas_subastas;
+BEGIN
+    nombre_florist := nombre_floristeria;
+    -- Verifica que quiere_envio sea 'SI' o 'NO'
+    IF quiere_envio NOT IN ('SI', 'NO') THEN
+        RAISE EXCEPTION 'El valor de quiere_envio debe ser "SI" o "NO"';
+    END IF;
+
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO id_florist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
+    -- Comprobar que la floristeria está afiliada a la subastadora
+    IF NOT EXISTS (
+        SELECT 1
+        FROM afiliacion
+        WHERE id_sub = id_subastadora
+          AND id_floristeria = id_florist
+    ) THEN
+        RAISE EXCEPTION 'La floristería no está afiliada a la subastadora';
+    END IF;
+
+    -- Obtiene la fecha actual
+    fecha_emision := CURRENT_TIMESTAMP;
+
+    numero_factura_anterior := (SELECT MAX(num_factura) FROM facturas_subastas);
+
+    -- Inserta la factura en la tabla facturas_subastas
+    INSERT INTO facturas_subastas(num_factura, fecha_emision, total, id_sub, id_floristeria, envio)
+    VALUES (numero_factura_anterior + 1, fecha_emision, 0, id_subastadora, id_florist, quiere_envio)
+    RETURNING * INTO nueva_factura;
+    RETURN NEXT nueva_factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION crear_lote_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_productor VARCHAR(40),
+    vbn_flor INT,
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT,
+    numero_factura NUMERIC(12)
+)
+RETURNS SETOF lotes_flor AS $$
+DECLARE
+    id_subastadora INT;
+    id_productor INT;
+    id_cont INT;
+    nuevo_lote lotes_flor;
+BEGIN
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id del productor
+    SELECT id_prod INTO id_productor
+    FROM productores
+    WHERE nombre_prod = nombre_productor;
+
+    -- Obtiene el id del contrato activo del productor con la subastadora
+    SELECT id_contrato INTO id_cont
+    FROM contratos
+    WHERE id_sub = id_subastadora
+      AND id_prod = id_productor
+      AND cancelado = 'NO'
+      AND CURRENT_DATE BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year'); -- los contratos son válidos por un año
+
+    -- Si no se encontró un contrato activo, lanza una excepción
+    IF id_cont IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo entre el productor % y la subastadora %', nombre_productor, nombre_subastadora;
+    END IF;
+
+    -- Verifica que el vbn se encuentre en el detalle de contrato
+    IF NOT EXISTS (
+        SELECT 1
+        FROM det_contratos
+        WHERE id_sub = id_subastadora
+          AND id_prod = id_productor
+          AND id_contrato = id_cont
+          AND vbn = vbn_flor
+    ) THEN
+        RAISE EXCEPTION 'El VBN % no está en el detalle del contrato activo', vbn_flor;
+    END IF;
+
+    -- Inserta el lote en la tabla lotes_flor
+    INSERT INTO lotes_flor(cantidad, precio_inicial, BI, precio_final, id_sub, id_prod, id_contrato, vbn, num_factura)
+    VALUES (cantidad_flores, precio_inicial, bi_lote, precio_final, id_subastadora, id_productor, id_cont, vbn_flor, numero_factura)
+    RETURNING * INTO nuevo_lote;
+    RETURN NEXT nuevo_lote;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Record que es necesario para generar_factura_subasta
+CREATE TYPE lote_flor AS (
+    nombre_productor VARCHAR(40),
+    vbn_flor INT,
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT
+);
+
+-- Funcion que genera una factura de subasta con lotes de flores, devuelve la factura creada
+CREATE OR REPLACE FUNCTION generar_factura_subasta(
+    nombre_subast VARCHAR(40),
+    nombre_florist VARCHAR(40),
+    quiere_envio VARCHAR(2),
+    lotes lote_flor[]
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    factura facturas_subastas;
+    lote lote_flor;
+BEGIN
+    -- Crea la factura
+    SELECT fn.* INTO factura FROM crear_factura(nombre_subast, nombre_florist, quiere_envio) fn;
+
+    -- Inserta los lotes en la factura
+    FOREACH lote IN ARRAY lotes
+    LOOP
+        -- Ejecuta la función crear_lote_factura
+        PERFORM crear_lote_factura(
+            nombre_subast,
+            lote.nombre_productor,
+            lote.vbn_flor,
+            lote.cantidad_flores,
+            lote.bi_lote,
+            lote.precio_inicial,
+            lote.precio_final,
+            factura.num_factura
+        );
+    END LOOP;
+
+    RETURN NEXT factura;
+END;
+$$ LANGUAGE plpgsql;
+
+select * from generar_factura_subasta(
+    'Subastadora 1',
+    'Floristeria 1',
+    'SI',
+    ARRAY[
+        ('Productor 1', 1, 10, 0.75, 10.00, 15.00),
+        ('Productor 2', 2, 15, 0.80, 12.00, 18.00)
+    ]
+)
