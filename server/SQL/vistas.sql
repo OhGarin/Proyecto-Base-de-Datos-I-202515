@@ -68,9 +68,9 @@ JOIN
 JOIN 
     paises pa ON p.id_pais = pa.id_pais
 LEFT JOIN 
-    significados s ON f.nombre_comun = s.descripcion;  
-
-
+    enlaces e ON f.id_flor_corte = e.id_flor_corte  
+LEFT JOIN 
+    significados s ON e.id_significado = s.id_significado;  
 
 --Vista para Obtener Facturas Subastas
 --Vista para incluir información sobre el productor y el precio final de cada lote.
