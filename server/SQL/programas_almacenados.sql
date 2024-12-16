@@ -582,21 +582,22 @@ RETURNS TABLE(nombre_propio_flor VARCHAR(40), nombre_comun_flor VARCHAR(40), gen
 DECLARE
 	flores flor[];
 	flor flor;
+    idflorist INT;
 BEGIN
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO idflorist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
 	FOR flor IN
 		SELECT cf.nombre as nombre_propio, fc.nombre_comun, fc.genero_especie, hp.tamano_tallo, hp.precio_unitario, 0 AS coincidencias
 		FROM catalogos_floristerias cf
 		JOIN flores_corte fc ON cf.id_flor_corte = fc.id_flor_corte
 		JOIN historicos_precio hp ON cf.id_catalogo = hp.id_catalogo
-		JOIN floristerias f ON cf.id_floristeria = f.id_floristeria
-		WHERE f.id_floristeria = (
-			SELECT ff.id_floristeria
-			FROM floristerias ff
-			WHERE nombre_floristeria = nombre_florist
-		)
+		WHERE cf.id_floristeria = idflorist
 		AND hp.fecha_final IS NULL
 	LOOP
-		IF colores_deseados IS NOT NULL THEN
+		IF colores_deseados IS NOT NULL AND array_length(colores_deseados, 1) > 0 THEN
 			IF flor.nombre_propio IN (
 				SELECT cf.nombre
 				FROM enlaces e
@@ -604,11 +605,12 @@ BEGIN
 				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
 				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
 				WHERE lower(c.nombre) in (SELECT lower(nombre) FROM unnest(colores_deseados) AS nombre)
+                AND cf.id_floristeria = idflorist
 			) THEN
 				flor.coincidencias := flor.coincidencias + 1;
 			END IF;
 		END IF;
-		IF descripciones_significados IS NOT NULL THEN
+		IF descripciones_significados IS NOT NULL AND array_length(descripciones_significados, 1) > 0 THEN
 			IF flor.nombre_propio IN (
 				SELECT cf.nombre
 				FROM enlaces e
@@ -616,6 +618,7 @@ BEGIN
 				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
 				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
 				WHERE lower(s.descripcion) in (SELECT lower(descripcion) FROM unnest(descripciones_significados) AS descripcion)
+                AND cf.id_floristeria = idflorist
 			) THEN
 				flor.coincidencias := flor.coincidencias + 1;
 			END IF;
@@ -634,7 +637,8 @@ BEGIN
 
 	IF NOT FOUND THEN
 		RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
-		FROM unnest(flores) AS f;
+		FROM unnest(flores) AS f
+        ORDER BY random();
 	END IF;
 END;
 $$ LANGUAGE plpgsql;
