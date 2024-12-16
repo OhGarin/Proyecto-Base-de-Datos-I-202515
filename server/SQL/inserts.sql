@@ -477,8 +477,8 @@ INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio
 (6, 14, '2024-04-06 00:00:00', 23.00, 80.0, NULL),
 (6, 14, '2024-04-06 00:00:01', 25.00, 85.0, NULL),
 -- Mistery Sunflower
-(6, 15, '2024-03-01', 9.00, 70.0, '2023-06-01'),
-(6, 15, '2023-06-02', 9.50, 70.0, NULL);
+(6, 15, '2024-03-01', 9.00, 70.0, '2024-06-01'),
+(6, 15, '2024-06-02', 9.50, 70.0, NULL);
 
 
 --INSERTS DE BOUQUETS. 

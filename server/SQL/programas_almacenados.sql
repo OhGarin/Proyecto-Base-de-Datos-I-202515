@@ -379,7 +379,7 @@ CREATE OR REPLACE FUNCTION validar_fechas_historicos_precio()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.fecha_final IS NOT NULL AND NEW.fecha_final <= NEW.fecha_inicio THEN
-        RAISE EXCEPTION 'La fecha final debe ser mayor que la fecha de inicio';
+        RAISE EXCEPTION 'La fecha final debe ser mayor que la fecha de inicio (en histórico de id (%, %))', NEW.id_floristeria, NEW.id_catalogo;
     END IF;
     RETURN NEW;
 END;
@@ -560,5 +560,81 @@ BEGIN
     END LOOP;
 
     RETURN NEXT factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TYPE flor AS (
+	nombre_propio VARCHAR(40),
+	nombre_comun VARCHAR(40),
+	genero_especie VARCHAR(40),
+    tamano_tallo NUMERIC(5,2),
+	precio NUMERIC(5,2),
+	coincidencias INT
+);
+
+-- ESTE ES EL RECOMENDADOR
+CREATE OR REPLACE FUNCTION recomendar_flores(
+	nombre_florist VARCHAR(40),
+	colores_deseados VARCHAR(15)[],
+	descripciones_significados VARCHAR(300)[]
+)
+RETURNS TABLE(nombre_propio_flor VARCHAR(40), nombre_comun_flor VARCHAR(40), genero_especie_flor VARCHAR(40), tamano_tallo_flor NUMERIC(5, 2), precio_flor NUMERIC(5,2)) AS $$
+DECLARE
+	flores flor[];
+	flor flor;
+BEGIN
+	FOR flor IN
+		SELECT cf.nombre as nombre_propio, fc.nombre_comun, fc.genero_especie, hp.tamano_tallo, hp.precio_unitario, 0 AS coincidencias
+		FROM catalogos_floristerias cf
+		JOIN flores_corte fc ON cf.id_flor_corte = fc.id_flor_corte
+		JOIN historicos_precio hp ON cf.id_catalogo = hp.id_catalogo
+		JOIN floristerias f ON cf.id_floristeria = f.id_floristeria
+		WHERE f.id_floristeria = (
+			SELECT ff.id_floristeria
+			FROM floristerias ff
+			WHERE nombre_floristeria = nombre_florist
+		)
+		AND hp.fecha_final IS NULL
+	LOOP
+		IF colores_deseados IS NOT NULL THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN colores c ON e.codigo_color = c.codigo_color
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(c.nombre) in (SELECT lower(nombre) FROM unnest(colores_deseados) AS nombre)
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		IF descripciones_significados IS NOT NULL THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN significados s ON e.id_significado = s.id_significado
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(s.descripcion) in (SELECT lower(descripcion) FROM unnest(descripciones_significados) AS descripcion)
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		flores := flores || flor;
+	END LOOP;
+
+	-- Si hay coincidencias, se retornan las flores ordenadas por coincidencias.
+
+	RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+	FROM unnest(flores) AS f
+	WHERE f.coincidencias > 0
+	ORDER BY f.coincidencias DESC;
+
+	-- Si no hay coincidencias, se retornan todas las flores de la floristería en orden aleatorio.
+
+	IF NOT FOUND THEN
+		RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+		FROM unnest(flores) AS f;
+	END IF;
 END;
 $$ LANGUAGE plpgsql;
