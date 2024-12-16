@@ -378,13 +378,1185 @@ ALTER TABLE det_facturas_floristerias
 
 --VIEWS FIN
 
---TRIGGERS INICIO
+--TRIGGERS Y PROGRAMAS ALMACENADOS INICIO
+--                                                   MANEJO DE CONTRATOS.
 
---TRIGGERS FIN
+--VALIDACIONES PARA PODER CREAR UN CONTRATO
+--Funcion para validar que una productora no tenga más de un contrato activo si la clasificacion es CA, CB, CC, KA
+CREATE OR REPLACE FUNCTION validar_contrato_activo()
+RETURNS TRIGGER AS $$
+DECLARE
+    contrato_activo RECORD;
+BEGIN
+    -- Cuenta contratos activos para el productor en las categorías especificadas
+    SELECT c.id_prod, c.clasificacion, c.id_contrato, p.nombre_prod, s.nombre_sub
+    INTO contrato_activo
+    FROM contratos c
+    JOIN productores p ON c.id_prod = p.id_prod
+    JOIN subastadoras s ON c.id_sub = s.id_sub
+    WHERE c.id_prod = NEW.id_prod
+      AND c.clasificacion IN ('CA', 'CB', 'CC', 'KA')
+      AND c.cancelado = 'NO'
+      AND NEW.fecha_contrato BETWEEN c.fecha_contrato AND (c.fecha_contrato + INTERVAL '1 year')
+    LIMIT 1; 
 
---PROGRAMAS ALMACENADOS INICIO
+    IF FOUND THEN
+        RAISE EXCEPTION 'El productor % ya tiene un contrato activo de categoría % con la subastadora %.',
+            contrato_activo.nombre_prod, contrato_activo.clasificacion, contrato_activo.nombre_sub;
+    END IF;
 
---PROGRAMAS ALMACENADOS FIN
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_contrato_activo
+BEFORE INSERT OR UPDATE ON contratos
+FOR EACH ROW EXECUTE FUNCTION validar_contrato_activo();
+
+--Funcion para validar que si en un contrato la categoria esta clasificada como KA, que sea holandesa
+CREATE OR REPLACE FUNCTION validar_clasificacion_KA()
+RETURNS TRIGGER AS $$
+DECLARE
+    pais_holanda_id INT;
+BEGIN
+    SELECT id_pais INTO pais_holanda_id
+    FROM paises
+    WHERE nombre_pais = 'Holanda';
+    IF NEW.clasificacion = 'KA' THEN
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM productores 
+            WHERE id_prod = NEW.id_prod 
+              AND id_pais = pais_holanda_id
+        ) THEN
+            RAISE EXCEPTION 'El productor debe ser de Holanda para clasificaciones KA en el contrato.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_clasificacion_KA
+BEFORE INSERT OR UPDATE ON contratos
+FOR EACH ROW EXECUTE FUNCTION validar_clasificacion_KA();
+
+--Funcion para validar el porcentaje total ofrecido en un contrato
+CREATE OR REPLACE FUNCTION validar_porcentaje_total()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.clasificacion = 'CA' AND NEW.porc_total_prod < 50.00 THEN
+        RAISE EXCEPTION 'El porcentaje total ofrecido para CA debe ser mayor al 50%%';
+    ELSIF NEW.clasificacion = 'CB' AND (NEW.porc_total_prod < 20.00 OR NEW.porc_total_prod > 49.00) THEN
+        RAISE EXCEPTION 'El porcentaje total ofrecido para CB debe estar entre 20%% y 49%%';
+    ELSIF NEW.clasificacion = 'CC' AND NEW.porc_total_prod >= 20.00 THEN
+        RAISE EXCEPTION 'El porcentaje total ofrecido para CC debe ser menor al 20%%';
+    ELSIF NEW.clasificacion = 'KA' AND NEW.porc_total_prod <> 100.00 THEN
+        RAISE EXCEPTION 'El porcentaje total ofrecido para KA debe ser exactamente 100%%';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trigger_validar_porcentaje_total
+BEFORE INSERT OR UPDATE ON contratos
+FOR EACH ROW EXECUTE FUNCTION validar_porcentaje_total();
+
+--Funcion para validar que la suma de los porcentajes de contratos CG no exceda el 100%
+CREATE OR REPLACE FUNCTION validar_porcentaje_total_CG()
+RETURNS TRIGGER AS $$
+DECLARE
+    suma_porcentajes NUMERIC(5, 2);
+BEGIN
+    SELECT COALESCE(SUM(porc_total_prod), 0)
+    INTO suma_porcentajes
+    FROM contratos
+    WHERE id_prod = NEW.id_prod
+      AND clasificacion = 'CG'
+      AND cancelado = 'NO'
+      AND fecha_inicio >= NOW() - INTERVAL '1 year';  
+
+    IF (suma_porcentajes + NEW.porc_total_prod) > 100.00 THEN
+        RAISE EXCEPTION 'La suma de todos los contratos CG para el productor no puede exceder el 100%%. Suma actual: %, nuevo contrato: %', suma_porcentajes, NEW.porc_total_prod;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_porcentaje_total_CG
+BEFORE INSERT ON contratos
+FOR EACH ROW
+WHEN (NEW.clasificacion = 'CG')
+EXECUTE FUNCTION validar_porcentaje_total_CG();
+
+--Funcion para validar que no exista un contrato activo CG para el productor y la subastadora
+CREATE OR REPLACE FUNCTION validar_unico_contrato_CG()
+RETURNS TRIGGER AS $$
+DECLARE
+    contrato_existente INT;
+BEGIN
+    SELECT COUNT(*)
+    INTO contrato_existente
+    FROM contratos
+    WHERE id_sub = NEW.id_sub
+      AND id_prod = NEW.id_prod
+      AND clasificacion = 'CG'
+      AND cancelado = 'NO'
+      AND NEW.fecha_contrato BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year');
+
+    IF contrato_existente > 0 THEN
+        RAISE EXCEPTION 'Ya existe un contrato activo CG para el productor % y la subastadora %. No se puede insertar un nuevo contrato.', NEW.id_prod, NEW.id_sub;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_unico_contrato_CG
+BEFORE INSERT ON contratos
+FOR EACH ROW
+WHEN (NEW.clasificacion = 'CG')
+EXECUTE FUNCTION validar_unico_contrato_CG();
+
+--Validar que un productor no tenga un contrato activo de tipo CG si le quiere cambiar la categoria a la renovacion
+CREATE OR REPLACE FUNCTION validar_contrato_CG()
+RETURNS TRIGGER AS $$
+DECLARE
+    contrato_CG RECORD;
+BEGIN
+    -- Verificar si el productor tiene un contrato activo de tipo CG
+    SELECT c.id_prod, c.clasificacion, c.id_contrato
+    INTO contrato_CG
+    FROM contratos c
+    WHERE c.id_prod = NEW.id_prod
+      AND c.clasificacion = 'CG'
+      AND c.cancelado = 'NO'
+      AND NEW.fecha_contrato BETWEEN c.fecha_contrato AND (c.fecha_contrato + INTERVAL '1 year')
+    LIMIT 1;
+
+    IF FOUND THEN
+        RAISE EXCEPTION 'El productor % ya tiene un contrato activo de tipo CG y no puede tener otro contrato de diferente categoría.',
+            NEW.id_prod;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_validar_contrato_CG
+BEFORE INSERT OR UPDATE ON contratos
+FOR EACH ROW
+WHEN (NEW.clasificacion <> 'CG')  
+EXECUTE FUNCTION validar_contrato_CG();
+
+--Funcion auxiliar para buscar los ids de la subastadora y productora pedidos
+CREATE OR REPLACE FUNCTION obtener_ids(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40)
+) RETURNS TABLE (
+    id_sub INT,
+    id_prod INT
+) AS $$
+BEGIN
+    SELECT 
+        s.id_sub,
+        p.id_prod
+    INTO 
+        id_sub, id_prod
+    FROM 
+        subastadoras s
+    JOIN 
+        productores p ON lower(p.nombre_prod) = lower(p_nombre_prod)
+    WHERE 
+        lower(s.nombre_sub) = lower(p_nombre_sub);
+
+    IF id_sub IS NULL OR id_prod IS NULL THEN
+        RAISE EXCEPTION 'Productor o subastadora no encontrados: % - %', p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    RETURN NEXT; 
+END;
+$$ LANGUAGE plpgsql;
+
+--VALIDACIONES PARA RENOVAR UN CONTRATO.
+
+--Funcion para asegurarse de que el contrato padre exista y que sean el mismo id_sub y id_prod y devolverá su fecha de creación
+CREATE OR REPLACE FUNCTION verificar_contrato_padre(
+    p_id_contrato_padre INT,
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40)
+)
+RETURNS DATE AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    fecha_padre DATE;
+    estado_cancelado VARCHAR(2);
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT fecha_contrato, cancelado INTO fecha_padre, estado_cancelado
+    FROM contratos
+    WHERE id_contrato = p_id_contrato_padre 
+      AND id_sub = v_id_sub 
+      AND id_prod = v_id_prod;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El contrato al que se referencia para la renovación con ID % no existe para el productor % en la subastadora %', 
+            p_id_contrato_padre, p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    IF estado_cancelado = 'SI' THEN
+        RAISE EXCEPTION 'No se puede renovar el contrato; el contrato original (ID: %) está cancelado.', 
+            p_id_contrato_padre;
+    END IF;
+
+    RETURN fecha_padre;
+END;
+$$ LANGUAGE plpgsql;
+
+--Procedimiento para validar si la fecha de renovación es mayor que la del contrato padre y si ha pasado un año desde su creación
+CREATE OR REPLACE FUNCTION validar_fecha_renovacion(
+    p_fecha_renovacion DATE,
+    p_fecha_padre DATE
+)
+RETURNS VOID AS $$
+BEGIN
+    IF p_fecha_renovacion <= p_fecha_padre THEN
+        RAISE EXCEPTION 'La fecha de renovación debe ser mayor a la fecha de creación del contrato original';
+    END IF;
+
+    IF p_fecha_renovacion < (p_fecha_padre + INTERVAL '1 year') THEN
+        RAISE EXCEPTION 'Debe haber pasado al menos un año desde la creación del contrato original a renovar';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion para validar la renovacion de un contrato
+CREATE OR REPLACE FUNCTION validar_renovacion_contrato()
+RETURNS TRIGGER AS $$
+DECLARE
+    fecha_padre DATE;
+BEGIN
+    fecha_padre := verificar_contrato_padre(NEW.id_contrato_padre, NEW.id_sub, NEW.id_prod);
+    PERFORM validar_fecha_renovacion(NEW.fecha_contrato, fecha_padre);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_renovacion
+BEFORE INSERT OR UPDATE ON contratos
+FOR EACH ROW
+WHEN (NEW.id_contrato_padre IS NOT NULL) 
+EXECUTE FUNCTION validar_renovacion_contrato();
+
+--DESACTIVARLO PARA COLOCAR LOS INSERTS DE CONTRATOS
+ALTER TABLE contratos DISABLE TRIGGER trigger_validar_renovacion;
+
+--CREACION DE CONTRATOS
+CREATE OR REPLACE PROCEDURE crear_contrato(
+    p_nombre_prod VARCHAR(40),
+    p_nombre_sub VARCHAR(40),
+    p_fecha_contrato DATE,
+    p_clasificacion VARCHAR(2),
+    p_porcentaje NUMERIC(5,2)
+) AS $$
+DECLARE
+    v_id_prod INT;
+    v_id_sub INT;
+    v_id_contrato INT;
+BEGIN
+ 
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod)
+    VALUES (v_id_sub, v_id_prod, p_fecha_contrato, p_clasificacion, p_porcentaje)
+    RETURNING id_contrato INTO v_id_contrato;
+
+    RAISE NOTICE 'Se creó un nuevo contrato (ID: %) para el productor % en la subastadora %.', 
+                 v_id_contrato, p_nombre_prod, p_nombre_sub;
+
+EXCEPTION
+    WHEN others THEN
+        RAISE NOTICE 'No se pudo crear el contrato para el productor % en la subastadora %. Puede que ya exista uno activo.', 
+                     p_nombre_prod, p_nombre_sub;
+END;
+$$ LANGUAGE plpgsql;
+
+--RENOVACION DE CONTRATOS
+--Funcion para renovar un contrato con categoria y/o porcentajes nuevos
+CREATE OR REPLACE PROCEDURE renovar_contrato_nuevos_datos(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_nueva_categoria VARCHAR(2),
+    p_nuevo_porcentaje NUMERIC(5,2)
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato_padre INT;
+    v_fecha_contrato DATE;
+    v_fecha_nueva DATE;
+BEGIN
+
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato, fecha_contrato INTO v_id_contrato_padre, v_fecha_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod 
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+      AND fecha_contrato >= CURRENT_DATE - INTERVAL '1 year'
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo y no cancelado para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    v_fecha_nueva := DATE_TRUNC('year', v_fecha_contrato) + INTERVAL '1 year' + (v_fecha_contrato - DATE_TRUNC('year', v_fecha_contrato)) + INTERVAL '2 days';
+
+    INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre)
+    VALUES (v_id_sub, v_id_prod, v_fecha_nueva, p_nueva_categoria, p_nuevo_porcentaje, 'NO', v_id_contrato_padre);
+
+    RAISE NOTICE 'Contrato renovado exitosamente para el productor % (ID: %) en la subastadora % (ID: %) con la nueva categoría % para la fecha %.', 
+                 p_nombre_prod, v_id_prod, p_nombre_sub, v_id_sub, p_nueva_categoria, v_fecha_nueva;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--Procedure para validar contratos y renovarlos manteniendo los datos de clasificacion y porcentaje
+CREATE OR REPLACE PROCEDURE renovar_contrato_manteniendo_datos(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40)
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato_padre INT;
+    v_fecha_padre DATE;
+    v_clasificacion VARCHAR(2);
+    v_porcentaje NUMERIC(5,2);
+    v_fecha_nueva DATE;
+BEGIN
+
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato, fecha_contrato INTO v_id_contrato_padre, v_fecha_padre
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod 
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+      AND fecha_contrato >= CURRENT_DATE - INTERVAL '1 year'
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo y no cancelado para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    SELECT 
+        c.clasificacion, 
+        c.porc_total_prod
+    INTO 
+        v_clasificacion, 
+        v_porcentaje
+    FROM 
+        contratos c
+    WHERE 
+        c.id_contrato = v_id_contrato_padre;
+
+    v_fecha_nueva := DATE_TRUNC('year', v_fecha_padre) + INTERVAL '1 year' + (v_fecha_padre - DATE_TRUNC('year', v_fecha_padre)) + INTERVAL '2 days';
+
+    INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre)
+    VALUES (v_id_sub, v_id_prod, v_fecha_nueva, v_clasificacion, v_porcentaje, 'NO', v_id_contrato_padre);
+
+    RAISE NOTICE 'Contrato renovado exitosamente para el productor % (ID: %) en la subastadora % (ID: %) con la clasificación % para la fecha %', 
+                 p_nombre_prod, v_id_prod, p_nombre_sub, v_id_sub, v_clasificacion, v_fecha_nueva;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--AUXILIARES PARA EL MANEJO DE CONTRATOS
+
+--Funcion auxiliar para obtener una tabla con los contratos activos actualmente
+CREATE OR REPLACE FUNCTION obtener_contratos_activos()
+RETURNS TABLE (
+    contrato_id_sub INT,
+    subastador_nombre VARCHAR(100),
+    contrato_id_prod INT,
+    productor_nombre VARCHAR(100),
+    contrato_id_contrato INT,
+    contrato_fecha_contrato DATE,
+    contrato_fecha_vencimiento DATE,
+    contrato_clasificacion VARCHAR(2),
+    contrato_porc_total_prod NUMERIC(5, 2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        c.id_sub, 
+        s.nombre_sub  
+        c.id_prod, 
+        p.nombre_prod,
+        c.id_contrato, 
+        c.fecha_contrato, 
+        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento 
+        c.clasificacion, 
+        c.porc_total_prod, 
+    FROM 
+        contratos c
+    JOIN 
+        productores p ON c.id_prod = p.id_prod
+    JOIN 
+        subastadoras s ON c.id_sub = s.id_sub
+    WHERE 
+        c.cancelado = 'NO' OR c.cancelado IS NULL 
+      AND 
+        c.fecha_contrato <= CURRENT_DATE
+      AND 
+        c.fecha_contrato + INTERVAL '1 year' >= CURRENT_DATE;  
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion para obtener una tabla con los contratos vencidos
+CREATE OR REPLACE FUNCTION obtener_contratos_vencidos()
+RETURNS TABLE (
+    contrato_id_sub INT,
+    subastador_nombre VARCHAR(100)
+    contrato_id_prod INT,
+    productor_nombre VARCHAR(100),
+    contrato_id_contrato INT,
+    contrato_fecha_contrato DATE,
+    contrato_fecha_vencimiento DATE,
+    contrato_clasificacion VARCHAR(2),
+    contrato_porc_total_prod NUMERIC(5, 2),
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        c.id_sub, 
+        s.nombre_sub 
+        c.id_prod, 
+        p.nombre_prod,
+        c.id_contrato, 
+        c.fecha_contrato, 
+        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento  
+        c.clasificacion, 
+        c.porc_total_prod, 
+    FROM 
+        contratos c
+    JOIN 
+        productores p ON c.id_prod = p.id_prod
+    JOIN 
+        subastadoras s ON c.id_sub = s.id_sub
+    WHERE 
+         c.cancelado = 'NO' OR c.cancelado IS NULL 
+      AND 
+        c.fecha_contrato + INTERVAL '1 year' < CURRENT_DATE;  
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion Auxiliar para obtener los contratos que estan por vencer en un numero de dias especificado
+CREATE OR REPLACE FUNCTION contratos_por_vencer(dias_aviso INT)
+RETURNS TABLE (
+    id_sub INT,
+    nombre_subastadora VARCHAR,
+    id_prod INT,
+    nombre_productor VARCHAR,
+    id_contrato INT,
+    fecha_contrato DATE,
+    fecha_vencimiento DATE,
+    dias_restantes INT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        c.id_sub,
+        s.nombre_sub AS nombre_subastadora,   
+        c.id_prod,
+        p.nombre_prod AS nombre_productor,        
+        c.id_contrato,
+        c.fecha_contrato,
+        (c.fecha_contrato + INTERVAL '1 year')::DATE AS fecha_vencimiento,
+        ((c.fecha_contrato + INTERVAL '1 year')::DATE - CURRENT_DATE) AS dias_restantes
+    FROM 
+        contratos c
+    JOIN 
+        productores p ON c.id_prod = p.id_prod
+    JOIN 
+        subastadoras s ON c.id_sub = s.id_sub
+    WHERE 
+        (c.fecha_contrato + INTERVAL '1 year')::DATE BETWEEN CURRENT_DATE AND CURRENT_DATE + dias_aviso;
+END;
+$$ LANGUAGE plpgsql;
+
+--                                                    CONTROL DE PAGOS Y COMISIONES
+
+--VALIDACIONES PARA CREAR UN PAGO
+--Funcion para validar que la fecha de pago de un contrato este entre la fecha de contrato y su validez de un año
+CREATE OR REPLACE FUNCTION validar_fecha_pago()
+RETURNS TRIGGER AS $$
+DECLARE
+    fecha_contrato DATE;
+BEGIN
+    SELECT c.fecha_contrato INTO fecha_contrato
+    FROM contratos c
+    WHERE c.id_contrato = NEW.id_contrato; 
+
+    IF NEW.fecha_pago < fecha_contrato OR NEW.fecha_pago > fecha_contrato + INTERVAL '1 year' THEN
+        RAISE EXCEPTION 'La fecha de pago debe estar entre % y % para dicho contrato', fecha_contrato, fecha_contrato + INTERVAL '1 year';
+    END IF;
+
+    RETURN NEW; 
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_fecha_pago
+BEFORE INSERT ON pagos_multas
+FOR EACH ROW EXECUTE FUNCTION validar_fecha_pago();
+
+--Al crearse un contrato, se crea su pago de membresia automaticamente
+CREATE OR REPLACE FUNCTION crear_pago_mem()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, monto_euros, tipo)
+    VALUES (NEW.id_sub, NEW.id_prod, NEW.id_contrato, NEW.fecha_contrato, 500.00, 'MEM');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_pago_membresia_contrato
+AFTER INSERT ON contratos
+FOR EACH ROW
+EXECUTE FUNCTION crear_pago_mem();
+
+--CALCULOS DE VENTAS MENSUALES, COMISIONES Y MULTAS.
+
+--Funcion para calcular las ventas mensuales basado en un contrato
+CREATE OR REPLACE FUNCTION calcular_ventas_mensuales(
+    p_id_sub INT,
+    p_id_prod INT,
+    p_id_contrato INT,
+    p_fecha_pago DATE
+) RETURNS FLOAT AS $$
+DECLARE
+    v_total_ventas FLOAT;
+BEGIN
+    SELECT SUM(l.precio_final)
+    INTO v_total_ventas
+    FROM lotes_flor l
+    JOIN contratos c ON l.id_sub = c.id_sub 
+                     AND l.id_prod = c.id_prod 
+                     AND l.id_contrato = c.id_contrato
+    JOIN facturas_subastas f ON l.num_factura = f.num_factura
+    WHERE c.id_sub = p_id_sub 
+      AND c.id_prod = p_id_prod 
+      AND c.id_contrato = p_id_contrato
+      AND DATE_TRUNC('month', f.fecha_emision) = DATE_TRUNC('month', p_fecha_pago) - INTERVAL '1 month'
+      AND EXTRACT(YEAR FROM f.fecha_emision) = EXTRACT(YEAR FROM p_fecha_pago);
+
+    RETURN COALESCE(v_total_ventas, 0);
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion para calcular la comision basado en un contrato y las ventas mensuales
+CREATE OR REPLACE FUNCTION calcular_comision(
+    p_id_sub INT,
+    p_id_prod INT,
+    p_id_contrato INT,
+    p_fecha_pago DATE
+) RETURNS FLOAT AS $$
+DECLARE
+    v_total_ventas FLOAT;
+    v_comision_rate FLOAT;
+    v_monto_euros FLOAT;
+    v_clasificacion VARCHAR(2);
+BEGIN
+
+    v_total_ventas := calcular_ventas_mensuales(p_id_sub, p_id_prod, p_id_contrato, p_fecha_pago);
+
+    SELECT c.clasificacion
+    INTO v_clasificacion
+    FROM contratos c
+    WHERE c.id_sub = p_id_sub AND c.id_prod = p_id_prod AND c.id_contrato = p_id_contrato;
+
+    IF v_clasificacion = 'CA' THEN
+        v_comision_rate := 0.005;
+    ELSIF v_clasificacion = 'CB' THEN
+        v_comision_rate := 0.01;
+    ELSIF v_clasificacion = 'CC' THEN
+        v_comision_rate := 0.02;
+    ELSIF v_clasificacion = 'CG' THEN
+        v_comision_rate := 0.05;
+    ELSIF v_clasificacion = 'KA' THEN
+        v_comision_rate := 0.0025;
+    END IF;
+
+    v_monto_euros := v_total_ventas * v_comision_rate;
+
+    RETURN v_monto_euros;
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion trigger para calcular la comision cuando se ingrese un pago tipo 'COM'
+CREATE OR REPLACE FUNCTION trg_calcular_comision()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_monto_multa FLOAT;
+    v_existente BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM pagos_multas
+        WHERE id_sub = NEW.id_sub
+          AND id_prod = NEW.id_prod
+          AND id_contrato = NEW.id_contrato
+          AND tipo = 'COM'
+          AND DATE_TRUNC('month', fecha_pago) = DATE_TRUNC('month', NEW.fecha_pago)
+    ) INTO v_existente;
+
+    IF v_existente THEN
+        RAISE EXCEPTION 'Ya existe una comisión registrada para el mes % de %.', 
+            TO_CHAR(NEW.fecha_pago, 'Month YYYY'), NEW.id_prod;
+    END IF;
+
+    IF NEW.tipo = 'COM' THEN
+        NEW.monto_euros := calcular_comision(NEW.id_sub, NEW.id_prod, NEW.id_contrato, NEW.fecha_pago);
+        
+        IF NEW.monto_euros = 0 THEN
+            RAISE EXCEPTION 'Las ventas mensuales del mes fueron 0, no se registrara la comisión y seguira solvente.';
+        END IF;
+
+        IF EXTRACT(DAY FROM NEW.fecha_pago) > 5 THEN
+            RAISE NOTICE 'Aviso: La fecha de pago % es posterior al día 5 del mes. Se puede aplicar una multa del 20%% de las ventas del siguiente mes.', NEW.fecha_pago;
+        END IF;
+
+        RAISE NOTICE 'Pago registrado exitosamente: Monto de la comisión es %', NEW.monto_euros;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_calcular_comision
+BEFORE INSERT ON pagos_multas
+FOR EACH ROW
+WHEN (NEW.tipo = 'COM')
+EXECUTE FUNCTION trg_calcular_comision();
+
+--Procedure para registrar una comision 
+CREATE OR REPLACE PROCEDURE registrar_comision(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_fecha_pago DATE
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato INTO v_id_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod 
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+      AND fecha_contrato >= CURRENT_DATE - INTERVAL '1 year'
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF v_id_contrato IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+    
+    INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo)
+    VALUES (v_id_sub, v_id_prod, v_id_contrato, p_fecha_pago, 'COM');
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion para calcular la multa basado en un contrato y las ventas mensuales
+CREATE OR REPLACE FUNCTION calcular_multa(
+    p_id_sub INT,
+    p_id_prod INT,
+    p_id_contrato INT,
+    p_fecha_pago DATE
+) RETURNS FLOAT AS $$
+DECLARE
+    v_total_ventas FLOAT;
+    v_monto_euros FLOAT;
+BEGIN
+    v_total_ventas := calcular_ventas_mensuales(p_id_sub, p_id_prod, p_id_contrato, p_fecha_pago);
+    v_monto_euros := v_total_ventas * 0.20;
+
+    RETURN v_monto_euros;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION trg_calcular_multa()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_total_ventas FLOAT;
+BEGIN
+    IF NEW.tipo = 'MUL' THEN
+        v_total_ventas := calcular_ventas_mensuales(NEW.id_sub, NEW.id_prod, NEW.id_contrato, NEW.fecha_pago);
+        NEW.monto_euros := v_total_ventas * 0.20;
+
+        IF NEW.monto_euros = 0 THEN
+            RAISE NOTICE 'No se puede registrar la multa porque no hubo ventas en el mes correspondiente. La multa sigue pendiente. Intente registrarla en el próximo mes con ventas mensuales.';
+            RETURN NULL; 
+        END IF;
+
+        RAISE NOTICE 'Pago de multa calculado: Monto de la multa es %', NEW.monto_euros;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_calcular_multa
+BEFORE INSERT ON pagos_multas
+FOR EACH ROW
+WHEN (NEW.tipo = 'MUL') 
+EXECUTE FUNCTION trg_calcular_multa();
+
+--Procedure a llamar para registrar una multa
+CREATE OR REPLACE PROCEDURE registrar_multa(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_fecha_pago DATE
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+BEGIN
+
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato INTO v_id_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod 
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+      ORDER BY fecha_contrato DESC
+      LIMIT 1;
+
+    IF v_id_contrato IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo)
+    VALUES (v_id_sub, v_id_prod, v_id_contrato, p_fecha_pago, 'MUL');
+END;
+$$ LANGUAGE plpgsql;
+
+--AUXILIARES PARA VER VENTAS MENSUALES
+
+--Muestra si un productor tiene ventas en un mes especifico
+CREATE OR REPLACE PROCEDURE consultar_ventas_mensuales(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_mes INT,  
+    p_anio INT  
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+    v_ventas_mensuales NUMERIC;
+    v_fecha_inicio DATE;
+    v_fecha_fin DATE;
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato INTO v_id_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF v_id_contrato IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    v_fecha_inicio := DATE_TRUNC('month', TO_DATE(p_anio || '-' || p_mes || '-01', 'YYYY-MM-DD'));
+    v_fecha_fin := (v_fecha_inicio + INTERVAL '1 month') - INTERVAL '1 day';
+
+    SELECT SUM(l.precio_final) INTO v_ventas_mensuales
+    FROM lotes_flor l
+    JOIN facturas_subastas f ON l.num_factura = f.num_factura
+    WHERE l.id_sub = v_id_sub
+      AND l.id_prod = v_id_prod
+      AND l.id_contrato = v_id_contrato
+      AND f.fecha_emision BETWEEN v_fecha_inicio AND v_fecha_fin; 
+
+    IF v_ventas_mensuales IS NULL OR v_ventas_mensuales = 0 THEN
+        RAISE NOTICE 'El productor % no tiene ventas registradas en el mes %/% para la subastadora %.',
+                     p_nombre_prod, p_mes, p_anio, p_nombre_sub;
+    ELSE
+        RAISE NOTICE 'El productor % tiene ventas registradas de % euros en el mes %/% para la subastadora %.',
+                     p_nombre_prod, v_ventas_mensuales, p_mes, p_anio, p_nombre_sub;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--AUXILIARES PARA CONSEGUIR EL ESTADO DE UN PRODUCTOR
+
+CREATE OR REPLACE FUNCTION analizar_ventas_mensuales(
+    p_id_contrato INT,
+    p_fecha_consulta DATE
+) RETURNS TABLE (
+    mes DATE,
+    ventas NUMERIC
+) AS $$
+DECLARE
+    v_fecha_inicio DATE;
+    v_fecha_fin DATE;
+BEGIN
+    SELECT fecha_contrato INTO v_fecha_inicio
+    FROM contratos
+    WHERE id_contrato = p_id_contrato;
+
+    v_fecha_fin := DATE_TRUNC('month', p_fecha_consulta)  - INTERVAL '1 day';
+
+    WHILE v_fecha_inicio <= v_fecha_fin LOOP
+
+        RETURN QUERY SELECT 
+            v_fecha_inicio AS mes,
+              CAST(COALESCE(SUM(l.precio_final), 0) AS NUMERIC) AS ventas
+        FROM lotes_flor l
+        JOIN facturas_subastas f ON l.num_factura = f.num_factura
+        WHERE f.fecha_emision >= v_fecha_inicio
+          AND f.fecha_emision < v_fecha_inicio + INTERVAL '1 month'
+          AND l.id_contrato = p_id_contrato;
+
+        v_fecha_inicio := v_fecha_inicio + INTERVAL '1 month';
+    END LOOP;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--   EVALUAR ESTADO DE UN PRODUCTOR ANTE UNA SUBASTADORA
+
+--Funcion que devuelve una tabla con el desglose del estatus de un productor segun sus pagos de comisiones
+CREATE OR REPLACE FUNCTION estatus_productor_comisiones(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_fecha_consulta DATE
+) RETURNS TABLE (
+    fecha_pago DATE, 
+    comision_pendiente NUMERIC,
+    comision_pagada NUMERIC,
+    total_acumulado NUMERIC,
+    estatus TEXT
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+    v_porcentaje_comision NUMERIC;
+    v_tipo_productor VARCHAR(2);
+    v_comision_total NUMERIC;
+    v_comision_pagada NUMERIC;
+    v_acumulado NUMERIC := 0;
+    v_ventas NUMERIC; 
+    mes DATE; 
+	morosos_count INT := 0; 
+    solventes_count INT := 0;  
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato INTO v_id_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF v_id_contrato IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    SELECT clasificacion INTO v_tipo_productor
+    FROM contratos
+    WHERE id_contrato = v_id_contrato;
+
+    CASE v_tipo_productor
+        WHEN 'CA' THEN v_porcentaje_comision := 0.005;
+        WHEN 'CB' THEN v_porcentaje_comision := 0.01;
+        WHEN 'CC' THEN v_porcentaje_comision := 0.02;
+        WHEN 'CG' THEN v_porcentaje_comision := 0.05;
+        WHEN 'KA' THEN v_porcentaje_comision := 0.0025;
+        ELSE v_porcentaje_comision := 0;
+    END CASE;
+
+    FOR mes, v_ventas IN 
+        SELECT * FROM analizar_ventas_mensuales(v_id_contrato, p_fecha_consulta)
+    LOOP
+        IF EXTRACT(DAY FROM p_fecha_consulta) <= 5 AND EXTRACT(MONTH FROM p_fecha_consulta) - 1 = EXTRACT(MONTH FROM mes) THEN
+            CONTINUE; 
+        END IF;
+
+        v_comision_total := CAST(v_ventas * v_porcentaje_comision AS NUMERIC);
+
+        SELECT COALESCE(MAX(p.fecha_pago), NULL) INTO fecha_pago
+        FROM pagos_multas p
+        WHERE p.id_contrato = v_id_contrato
+          AND p.fecha_pago >= mes
+          AND p.fecha_pago < mes + INTERVAL '1 month'
+          AND p.tipo = 'COM';
+
+        IF fecha_pago IS NULL THEN
+            fecha_pago := date_trunc('month', mes + INTERVAL '1 month');  
+        END IF;
+
+        SELECT COALESCE(SUM(p.monto_euros), 0) INTO v_comision_pagada
+        FROM pagos_multas p
+        WHERE p.id_contrato = v_id_contrato
+          AND p.fecha_pago >= mes
+          AND p.fecha_pago < mes + INTERVAL '1 month'
+          AND p.tipo = 'COM';
+
+        v_comision_total := v_comision_total - v_comision_pagada;
+
+        v_acumulado := v_acumulado + GREATEST(v_comision_total, 0);
+
+        IF v_acumulado > 0 THEN
+            estatus := 'Moroso';
+			 morosos_count := morosos_count + 1; 
+        ELSE
+            estatus := 'Solvente';
+			 solventes_count := solventes_count + 1; 
+        END IF;
+
+        RETURN QUERY SELECT 
+            fecha_pago AS fecha_,  
+            GREATEST(v_comision_total, 0) AS comision_pendiente,
+            v_comision_pagada,
+            v_acumulado AS total_acumulado,
+            estatus;
+    END LOOP;
+
+		IF morosos_count > 0 THEN
+    RAISE NOTICE 'El estado general (en cuanto a comisiones) del productor % ante la subastadora % en la fecha % es : MOROSO',
+	p_nombre_prod, p_nombre_sub, p_fecha_consulta;
+	ELSE 
+	 RAISE NOTICE 'El estado general (en cuanto a comisiones) del productor % ante la subastadora % en la fecha % es : SOLVENTE',
+	p_nombre_prod, p_nombre_sub, p_fecha_consulta;
+	END IF;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion que devuelve una tabla con el desglose del estatus de un productor segun sus pagos de multas
+CREATE OR REPLACE FUNCTION estatus_productor_multas(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_fecha_consulta DATE
+) RETURNS TABLE (
+    fecha_pago_tardio DATE,
+    multa_pendiente NUMERIC,
+    multa_pagada NUMERIC,
+    total_acumulado NUMERIC,
+    estatus TEXT,
+    mensaje TEXT
+) AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+    v_tipo_productor VARCHAR(2);
+    v_ventas NUMERIC; 
+    mes DATE; 
+    v_multa_total NUMERIC := 0;
+    v_multa_pagada NUMERIC := 0;
+    v_acumulado NUMERIC := 0;
+    v_ventas_actual NUMERIC;
+    v_fecha_pago DATE;
+    v_fecha_limite DATE; 
+	morosos_count INT := 0; 
+    solventes_count INT := 0;  
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT id_contrato INTO v_id_contrato
+    FROM contratos
+    WHERE id_sub = v_id_sub 
+      AND id_prod = v_id_prod
+      AND (cancelado = 'NO' OR cancelado IS NULL)
+    ORDER BY fecha_contrato DESC
+    LIMIT 1;
+
+    IF v_id_contrato IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % en la subastadora %.', 
+            p_nombre_prod, p_nombre_sub;
+    END IF;
+
+    SELECT clasificacion, fecha_contrato INTO v_tipo_productor, v_fecha_limite
+    FROM contratos
+    WHERE id_contrato = v_id_contrato;
+
+    v_fecha_limite := v_fecha_limite + INTERVAL '1 year';
+	
+    FOR mes, v_ventas IN 
+        SELECT * FROM analizar_ventas_mensuales(v_id_contrato, p_fecha_consulta)
+    LOOP
+        v_multa_total := 0;
+        v_multa_pagada := 0;
+
+        SELECT COALESCE(MAX(p.fecha_pago), NULL) INTO v_fecha_pago
+        FROM pagos_multas p
+        WHERE p.id_contrato = v_id_contrato
+          AND p.fecha_pago >= date_trunc('month', mes) + INTERVAL '1 month'
+          AND p.fecha_pago < date_trunc('month', mes) + INTERVAL '2 months'
+          AND p.tipo = 'COM';
+		  
+        IF (EXTRACT(DAY FROM v_fecha_pago) > 5 OR v_fecha_pago IS NULL) AND v_ventas > 0 THEN
+		
+            mes := date_trunc('month', v_fecha_pago);
+
+            WHILE mes < v_fecha_limite LOOP
+		      SELECT COALESCE(SUM(l.precio_final), 0) INTO v_ventas_actual
+	                FROM lotes_flor l
+	                JOIN facturas_subastas f ON l.num_factura = f.num_factura
+	                WHERE f.fecha_emision >= mes 
+	                  AND f.fecha_emision < mes + INTERVAL '1 month'
+	                  AND l.id_contrato = v_id_contrato; 
+
+	                IF v_ventas_actual > 0 AND (v_fecha_pago > mes + INTERVAL '4 days' OR v_fecha_pago IS NULL) 
+					AND p_fecha_consulta > (mes + INTERVAL '1 month') THEN
+	                    v_multa_total := v_ventas_actual * 0.20; 
+	                    mensaje := 'Multa calculada en base a las ventas del mes.';
+	                    EXIT;  
+	                END IF;
+	                mes := mes + INTERVAL '1 month';
+            END LOOP;
+        END IF;
+
+        SELECT COALESCE(SUM(p.monto_euros), 0) INTO v_multa_pagada
+        FROM pagos_multas p
+        WHERE p.id_contrato = v_id_contrato
+          AND p.fecha_pago >= date_trunc('month', mes) + INTERVAL '1 month'
+          AND p.fecha_pago < p_fecha_consulta
+          AND p.tipo = 'MUL';
+
+        v_acumulado := v_acumulado + GREATEST(v_multa_total - v_multa_pagada, 0);
+
+        IF (v_acumulado > 0) OR (p_fecha_consulta < date_trunc('month', mes) + INTERVAL '1 month' 
+		AND v_multa_total = 0 AND EXTRACT(DAY FROM p_fecha_consulta) > 5 ) THEN
+            estatus := 'Moroso';
+			morosos_count := morosos_count + 1; 
+        ELSE IF v_multa_pagada > 0 AND v_acumulado = 0 THEN
+            estatus := 'Solvente';
+		    solventes_count := solventes_count + 1; 		
+		 END IF;
+       END IF;
+
+		IF v_fecha_pago IS NULL THEN
+			v_fecha_pago =  date_trunc('month', mes);
+		END IF;
+
+
+		RAISE NOTICE 'A VER %',  date_trunc('month', mes);
+		
+        IF p_fecha_consulta < date_trunc('month', mes) + INTERVAL '1 month' 
+		AND v_multa_total = 0 AND EXTRACT(DAY FROM p_fecha_consulta) > 5 THEN
+		
+            RETURN QUERY SELECT 
+                v_fecha_pago AS fecha_pago_tardio,  
+                GREATEST(v_multa_total - v_multa_pagada, 0) AS multa_pendiente, 
+                v_multa_pagada AS multa_pagada,
+                v_acumulado AS total_acumulado,
+                estatus,
+                'Tiene una multa pendiente. El monto se dará cuando se consiga el próximo mes con ventas.' AS mensaje;  
+        ELSE
+			IF v_multa_total > 0 THEN
+            RETURN QUERY SELECT 
+                v_fecha_pago AS fecha_pago_tardio, 
+                GREATEST(v_multa_total - v_multa_pagada, 0) AS multa_pendiente,
+                v_multa_pagada AS multa_pagada,
+                v_acumulado AS total_acumulado,
+                estatus,
+                mensaje;
+			END IF;
+        END IF;
+    END LOOP;
+	
+	IF morosos_count > 0 THEN
+    RAISE NOTICE 'El estado general (en cuanto a multas) del productor % ante la subastadora % en la fecha % es : MOROSO',
+	p_nombre_prod, p_nombre_sub, p_fecha_consulta;
+	ELSE 
+	 RAISE NOTICE 'El estado general (en cuanto a multas) del productor % ante la subastadora % en la fecha % es : SOLVENTE',
+	p_nombre_prod, p_nombre_sub, p_fecha_consulta;
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+--Funcion que devuelve el estado general de un productor, sin desglose
+CREATE OR REPLACE FUNCTION estatus_general_productor(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40),
+    p_fecha_consulta DATE
+) RETURNS TABLE (
+    estatus_multas TEXT,
+    estatus_comisiones TEXT,
+    estatus_general TEXT,
+    mensaje TEXT
+) AS $$
+DECLARE
+    v_estatus_multas TEXT;
+    v_estatus_comisiones TEXT;
+    v_morosos_count_multas INT;
+    v_solventes_count_multas INT;
+    v_morosos_count_comisiones INT;
+    v_solventes_count_comisiones INT;
+BEGIN
+    SELECT 
+        COUNT(CASE WHEN estatus = 'Moroso' THEN 1 END),
+        COUNT(CASE WHEN estatus = 'Solvente' THEN 1 END)
+    INTO v_morosos_count_multas, v_solventes_count_multas
+    FROM estatus_productor_multas(p_nombre_sub, p_nombre_prod, p_fecha_consulta);
+
+    SELECT 
+        COUNT(CASE WHEN estatus = 'Moroso' THEN 1 END),
+        COUNT(CASE WHEN estatus = 'Solvente' THEN 1 END)
+    INTO v_morosos_count_comisiones, v_solventes_count_comisiones
+    FROM estatus_productor_comisiones(p_nombre_sub, p_nombre_prod, p_fecha_consulta);
+
+    IF v_morosos_count_multas > 0 OR v_morosos_count_comisiones > 0 THEN
+        estatus_general := 'Moroso';
+    ELSE
+        estatus_general := 'Solvente';
+    END IF;
+
+    mensaje := 'El productor ' || p_nombre_prod || ' ante la subastadora ' || 
+               p_nombre_sub || ' en la fecha ' || p_fecha_consulta || 
+               ' tiene ' || v_morosos_count_multas || ' estados morosos por multas y ' || 
+               v_morosos_count_comisiones || ' estados morosos por comisiones. ' ||
+               ' El estatus general es: ' || estatus_general || '.';
+
+    RETURN QUERY SELECT 
+        CASE WHEN v_morosos_count_multas > 0 THEN 'Moroso' ELSE 'Solvente' END AS estatus_multas,
+        CASE WHEN v_morosos_count_comisiones > 0 THEN 'Moroso' ELSE 'Solvente' END AS estatus_comisiones,
+        estatus_general,
+        mensaje;
+END;
+$$ LANGUAGE plpgsql;
+
+--TRIGGERS Y PROGRAMAS ALMACENADOS FIN
 
 --INSERTS INICIO
 INSERT INTO paises (nombre_pais) VALUES 
@@ -795,6 +1967,8 @@ INSERT INTO det_facturas_floristerias (cantidad, id_floristeria, num_factura, id
 (1, 6, 1011, 14, NULL, 200.00, 5.0, 5.0, 5.00)  -- Detalle 2 para factura 1011
 ;
 --INSERTS FIN
+
+ALTER TABLE contratos DISABLE TRIGGER trigger_validar_renovacion;
 
 --QUERYS PARA REPORTES INICIO
 
