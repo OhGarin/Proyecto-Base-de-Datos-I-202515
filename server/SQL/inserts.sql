@@ -16,15 +16,15 @@ COMMIT;
 --INSERTS DE FLORES DE CORTE
 BEGIN;
 INSERT INTO flores_corte (nombre_comun, genero_especie, etimologia, tem_conservacion, colores) VALUES
-('Rosa', 'Rosa spp.', 'Llamada así en honor a la diosa romana de la belleza.', 18.00, 'Rojo, rosa, blanco, amarillo'),
-('Clavel', 'Dianthus caryophyllus', 'El nombre proviene del griego "dianthus", que significa "flor divina".', 14.00, 'Rojo, rosa, blanco, amarillo'),
-('Lirio', 'Lilium spp.', 'Proviene del latín "lilium", que significa "lirio".', 10.00, 'Blanco, amarillo, naranja, rojo'),
-('Tulipán', 'Tulipa spp.', 'Deriva del turco "tülbent", que significa "turbante".', 12.00, 'Rojo, amarillo, rosa, púrpura'),
-('Girasol', 'Helianthus annuus', 'Su nombre proviene del griego "helios" (sol) y "anthos" (flor).', 20.00, 'Amarillo, marrón, naranja'),
-('Margarita', 'Bellis perennis', 'Su nombre proviene del latín "bellus", que significa "hermoso".', 15.00, 'Blanco, amarillo'),
-('Freesia', 'Freesia spp.', 'Nombrada en honor al botánico alemán Friedrich Freese.', 15.00, 'Amarillo, blanco, rosa, lavanda'),
-('Hortensia', 'Hydrangea macrophylla', 'El nombre proviene del griego "hydor" (agua) y "angeion" (recipiente).', 20.00, 'Azul, rosa, blanco, púrpura'),
-('Crisantemo', 'Chrysanthemum morifolium', 'Proviene del griego "chrysos" (oro) y "anthemon" (flor).', 16.00, 'Amarillo, blanco, rosa, púrpura')
+('Rosa', 'Rosa spp.', 'La rosa lleva su nombre en honor a la diosa romana de la belleza. Cultivada en diversas culturas, simboliza amor y pasión, apreciada por su fragancia y belleza a lo largo de la historia.', 18.00, 'Presenta colores como rojo, rosa, blanco y amarillo. Cada color tiene matices y combinaciones. Las rosas rojas simbolizan amor profundo, mientras que las blancas representan pureza y las amarillas, alegría.'),
+('Clavel', 'Dianthus caryophyllus', 'El clavel proviene del griego "dianthus", que significa "flor divina". Cultivada desde la antigüedad, es valorada por su belleza y durabilidad, siendo un símbolo de amor y admiración en muchas culturas.', 14.00, 'Viene en colores como rojo, rosa, blanco y amarillo. Cada color tiene variaciones. Los claveles rojos simbolizan amor profundo, los blancos son un signo de pureza y gratitud, y los amarillos, desprecio.'),
+('Lirio', 'Lilium spp.', 'El lirio proviene del latín "lilium", que significa "lirio". Esta flor ha sido venerada en muchas culturas, simbolizando pureza y renacimiento, y se asocia frecuentemente con la Virgen María en el arte.', 10.00, 'Se presenta en colores como blanco, amarillo, naranja y rojo. Cada flor puede tener un solo color o patrones. Los lirios blancos simbolizan inocencia, mientras que los rojos representan amor y pasión.'),
+('Tulipán', 'Tulipa spp.', 'El tulipán deriva del turco "tülbent", que significa "turbante". Esta flor se ha convertido en un símbolo de elegancia, destacándose en jardines y arreglos florales, simbolizando amor perfecto.', 12.00, 'Viene en colores como rojo, amarillo, rosa y púrpura, a menudo mostrando combinaciones. Los rojos simbolizan amor verdadero, mientras que los amarillos representan alegría, cada uno con su propio atractivo.'),
+('Girasol', 'Helianthus annuus', 'El nombre girasol proviene del griego "helios" (sol) y "anthos" (flor). Con su forma que sigue al sol, simboliza adoración y lealtad, siendo un emblema de energía y alegría en jardines.', 20.00, 'Predominantemente amarillo, con un centro marrón que añade contraste. Algunas variedades son naranjas, aportando un toque vibrante. Los girasoles son conocidos por atraer la atención y transmitir felicidad.'),
+('Margarita', 'Bellis perennis', 'La margarita proviene del latín "bellus", que significa "hermoso". Esta flor simboliza inocencia y pureza, siendo apreciada por su simplicidad y encanto en jardines y arreglos florales.', 15.00, 'Comúnmente blancas con un centro amarillo, aunque hay variedades en tonos rosados y amarillos. Cada color aporta un matiz especial, simbolizando alegría y esperanza en diversas decoraciones florales.'),
+('Freesia', 'Freesia spp.', 'La freesia fue nombrada en honor al botánico alemán Friedrich Freese. Conocida por su fragancia dulce, simboliza amistad y confianza, siendo popular en arreglos florales por su belleza.', 15.00, 'Presenta colores como amarillo, blanco, rosa y lavanda. A menudo tienen tonos combinados, lo que las hace aún más atractivas. Su diversidad de colores y fragancia las convierte en favoritas en decoraciones.'),
+('Hortensia', 'Hydrangea macrophylla', 'El nombre hortensia proviene del griego "hydor" (agua) y "angeion" (recipiente). Con grandes cabezas florales, estas flores cambian de color según el pH del suelo, simbolizando versatilidad.', 20.00, 'Pueden ser azules, rosas o blancas, dependiendo de la acidez del suelo. Su colorido vibrante las hace populares en decoraciones. Azules simbolizan comprensión, rosas amor y blancas pureza en jardines.'),
+('Crisantemo', 'Chrysanthemum morifolium', 'Proviene del griego "chrysos" (oro) y "anthemon" (flor). Venerada en muchas culturas, especialmente en Asia, simboliza longevidad y felicidad, siendo parte de diversas tradiciones.', 16.00, 'Viene en colores diversos como amarillo, blanco, rosa y púrpura. Cada color tiene sus variaciones y simbolismos, aportando rica diversidad a arreglos florales y celebraciones en muchas culturas.')
 ;
 COMMIT;
 
@@ -90,12 +90,12 @@ COMMIT;
 --INSERTS DE FLORISTERIAS
 BEGIN;
 INSERT INTO floristerias (nombre_floristeria, pagweb_floristeria, telefono_floristeria, email_floristeria, id_pais, url_imagen) VALUES 
-('Fleura Metz', 'fleura.com', '1234567890', 'info@fleura.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Estados Unidos'), 'https://media.licdn.com/dms/image/v2/C4D0BAQHQipnwGts1Zg/company-logo_200_200/company-logo_200_200/0/1630567322813/fleurametz_logo?e=2147483647&v=beta&t=lYp7vlJiZGtjBm02dJaVVm0G5jN90KEEgQ_eVRTr4J8'),
+('Fleura Metz', 'fleura.com', '1234567890', 'info@fleura.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Estados Unidos'), 'https://play-lh.googleusercontent.com/mAttURxzmRPVodxxeHdacFBjLcfoKd9Grri22J7RuiJUcUoTjOY6mHTMo2qXVUicJoI'),
 ('Interflora', 'interflora.co.uk', '0987654321', 'contact@interflora.co.uk', (SELECT id_pais FROM paises WHERE nombre_pais = 'Inglaterra'), 'https://descuentos.abc.es/static/shop/10354/logo/C%C3%B3digo_descuento_Interflora_-_Logo_.png'),
 ('Floreria San Telmo', 'santelmo.com', '1122334455', 'info@santelmo.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Argentina'), 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSwrHmxgzykj32vJwbtX6c1oT9QkAzZNBOJJg&s'),
 ('Sunshine Bouquets', 'sunshinebouquets.com', '2233445566', 'info@sunshinebouquets.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'Colombia'), 'https://media.licdn.com/dms/image/v2/C4D0BAQFn9Mo7DknFMA/company-logo_200_200/company-logo_200_200/0/1630525340234/sunshinebouquetcompany_logo?e=2147483647&v=beta&t=70V5QV2dC26SFYEbXC00S6PpqP8t9tmf_NZEW4Uw1tE'),
 ('Les Fleurs', 'lesfleurs.mx', '3344556677', 'info@lesfleurs.mx', (SELECT id_pais FROM paises WHERE nombre_pais = 'Mexico'), 'https://lesfleurs.com.mx/cdn/shop/files/Logo-oro-_1_1_50396ee2-c96e-4036-bad6-6a45b4c9edcc_1080x.png?v=1675447413'),
-('FloraQueen', 'floraqueen.com', '4455667788', 'info@floraqueen.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'España'), 'https://gsg-wl.chollometro.com/cupones/images/fit-in/256x/images/f/Floraqueen_Logo.png')
+('FloraQueen', 'floraqueen.com', '4455667788', 'info@floraqueen.com', (SELECT id_pais FROM paises WHERE nombre_pais = 'España'), 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7lmYXbDsX4bKXIDA_RZTiOyAaMwIhAfdynQ&s')
 ;
 COMMIT;
 
@@ -103,129 +103,40 @@ COMMIT;
 BEGIN;
 INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
 (3, 2, '2022-12-12', 'CC', 18.00, 'SI', NULL ), --Productor 2 con Subastador 3, cancelado
-(1, 1, '2023-01-15', 'CB', 35.00, 'SI', NULL) -- Productor 1 con Subastador 1, cancelado
-;
-COMMIT;
-BEGIN;
-INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
-(2, 1, '2023-01-15', 'CA', 65.00, 'NO', NULL ), -- Productor 1 con Subastador 2, vencido
-(2, 3, '2023-05-17', 'CG', 30.00, 'NO', NULL) -- Productor 3 que tiene contratos con v companias, vencido
-;
-COMMIT;
-BEGIN;
-INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_total_prod, cancelado, id_contrato_padre) VALUES
-(1, 3, '2023-12-29', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido SUBASTADORA 1
-(2, 1, '2024-01-16', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido 
-(2, 2, '2024-01-16', 'KA', 100.00, 'NO', NULL), -- Productor 2 con Subastador 2, ofrece el 100% aca, valido
-(3, 3, '2024-03-06', 'CG', 20.00, 'NO', NULL), -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
-(2, 3, '2024-05-17', 'CG', 30.00, 'NO', 4) -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
+(1, 1, '2023-01-15', 'CB', 35.00, 'SI', NULL), -- Productor 1 con Subastador 1, cancelado
+
+(2, 1, '2023-06-15', 'CA', 65.00, 'NO', NULL ), -- Productor 1 con Subastador 2, vencido
+(2, 3, '2023-05-17', 'CG', 30.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, vencido
+
+(1, 3, '2023-12-18', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido SUBASTADORA 1. Ej de va al dia con sus pagos, se vence el dia de la evualucacion, para renovar
+(2, 1, '2024-06-16', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido EJ para que tenga comisiones no pagadas y multas, para cancelar contrato
+(2, 2, '2024-06-16', 'KA', 100.00, 'NO', NULL), -- Productor 2 con Subastador 2, ofrece el 100% aca, valido
+(3, 3, '2024-09-24', 'CG', 20.00, 'NO', NULL), -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
+(2, 3, '2024-05-18', 'CG', 30.00, 'NO', 4) -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
 ;
 COMMIT;
 
 --INSERTS DE PAGOS MULTAS 
 BEGIN;
-INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo, monto_euros) VALUES
---Pagos de Membresias
-(3, 2, 1, '2022-12-12', 'MEM', 500),
-(1, 1, 2, '2023-01-15', 'MEM', 500),
-(2, 1, 3, '2023-01-15', 'MEM', 500 ),
-(2, 3, 4, '2023-05-17', 'MEM', 500),
-(1, 3, 5, '2023-12-29', 'MEM', 500),
-(2, 1, 6, '2024-01-15', 'MEM', 500),
-(2, 2, 7, '2024-01-16','MEM', 500),
-(3, 3, 8, '2024-03-06', 'MEM', 500),
-(2, 3, 9, '2024-05-17', 'MEM', 500)
+-- Pagos de Comisiones
+INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo) VALUES
+(1, 3, 5, '2024-05-01', 'COM'),
+(1, 3, 5, '2024-06-01', 'COM'),
+(1, 3, 5, '2024-07-01', 'COM'),
+
+(2, 1, 6, '2024-07-06', 'COM'), 
+(2, 1, 6, '2024-08-04', 'COM'),
+(2, 1, 6, '2024-12-06', 'COM'),
+
+(2, 2, 7, '2024-07-05', 'COM'),
+(2, 2, 7, '2024-08-05', 'COM'),
+
+(3, 3, 8, '2024-10-05', 'COM'),  -- Comisión de Septiembre (pagada a tiempo)
+(3, 3, 8, '2024-11-05', 'COM'),  -- Comisión de octubre (pagada a tiempo)
+(3, 3, 8, '2024-12-05', 'COM'),  -- Comisión de octubre (pagada a tiempo)
+
+(2, 3, 9, '2024-12-08', 'COM')  -- Comisión de noviembre (pagada tarde)
 ;
-COMMIT;
-
-BEGIN;
-INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo, monto_euros) VALUES
---Pagos de Comisiones
-(2, 1, 3, '2023-02-01', 'COM',24),
-(2, 1, 3, '2023-03-01', 'COM', 25),
-(2, 1, 3, '2023-04-01' , 'COM', 100),
-(2, 1, 3, '2023-05-01', 'COM', 150),
-(2, 1, 3, '2023-06-01' ,'COM', 70),
-(2, 1, 3, '2023-07-01', 'COM', 50),
-(2, 1, 3, '2023-08-01', 'COM', 50),
-(2, 1, 3, '2023-09-01', 'COM',49.78),
-(2, 1, 3, '2023-10-01', 'COM', 60),
-(2, 1, 3, '2023-11-01',  'COM',65),
-(2, 1, 3, '2023-12-01', 'COM',102),
-
-(2, 3, 4, '2023-06-04', 'COM', 75),
-(2, 3, 4, '2023-07-04', 'COM', 50),
-(2, 3, 4, '2023-08-04', 'COM', 65),
-(2, 3, 4, '2023-09-04','COM', 20),
-(2, 3, 4, '2023-10-04','COM', 45),
-(2, 3, 4, '2023-11-04','COM', 65),
-(2, 3, 4, '2023-12-04','COM',94),
-(2, 3, 4, '2024-01-04','COM', 65),
-(2, 3, 4, '2024-02-04','COM', 37),
-(2, 3, 4, '2024-03-04','COM', 61.2),
-(2, 3, 4, '2024-04-04','COM', 98),
-(2, 3, 4, '2024-05-04','COM', 54),
-
-(1, 3, 5, '2024-01-05', 'COM', 89),
-(1, 3, 5, '2024-02-05','COM', 200),
-(1, 3, 5, '2024-02-05','COM', 175),
-(1, 3, 5, '2024-04-05','COM', 300),
-(1, 3, 5, '2024-05-05','COM', 450),
-(1, 3, 5, '2024-06-05','COM', 320),
-(1, 3, 5, '2024-07-05','COM', 210),
-(1, 3, 5, '2024-08-05','COM', 100),
-(1, 3, 5, '2024-09-05','COM', 162),
-(1, 3, 5, '2024-10-05','COM', 196),
-(1, 3, 5, '2024-11-05','COM', 150),
-(1, 3, 5, '2024-12-05','COM', 102),
-
-(2, 1, 6, '2024-02-03','COM', 560),
-(2, 1, 6, '2024-03-03', 'COM', 460),
-(2, 1, 6, '2024-04-10','COM', 608),
-(2, 1, 6, '2024-05-03','COM', 562),
-(2, 1, 6, '2024-06-03','COM', 589),
-(2, 1, 6, '2024-07-03', 'COM', 498),
-(2, 1, 6, '2024-08-03', 'COM', 563),
-(2, 1, 6, '2024-09-03', 'COM', 498),
-(2, 1, 6, '2024-10-10', 'COM', 420),
-(2, 1, 6, '2024-11-03', 'COM', 360),
-(2, 1, 6, '2024-12-03', 'COM', 250),
-
-(2, 2, 7, '2024-02-02', 'COM', 360),
-(2, 2, 7, '2024-03-02','COM', 708),
-(2, 2, 7, '2024-04-07','COM', 750),
-(2, 2, 7, '2024-05-08', 'COM', 800),
-(2, 2, 7, '2024-06-10', 'COM', 675),
-(2, 2, 7, '2024-07-02', 'COM', 499),
-(2, 2, 7, '2024-08-02', 'COM', 437),
-(2, 2, 7, '2024-09-02', 'COM', 213),
-(2, 2, 7, '2024-10-02', 'COM', 200),
-(2, 2, 7, '2024-11-02', 'COM', 75),
-(2, 2, 7, '2024-12-02', 'COM', 106),
-
-(3, 3, 8, '2024-04-06','COM', 269 ),
-(3, 3, 8, '2024-05-01','COM', 521),
-(3, 3, 8, '2024-06-01','COM', 365),
-(3, 3, 8, '2024-07-01','COM', 608),
-(3, 3, 8, '2024-08-01','COM', 806),
-(3, 3, 8, '2024-09-01','COM', 532),
-(3, 3, 8, '2024-10-01','COM', 200),
-(3, 3, 8, '2024-11-01','COM', 194),
-(3, 3, 8, '2024-12-06','COM', 100),
-
-(2, 3, 9, '2024-06-01','COM', 200), 
-(2, 3, 9, '2024-07-01','COM', 300), 
-(2, 3, 9, '2024-08-01','COM', 205), 
-(2, 3, 9, '2024-09-01','COM', 362), 
-(2, 3, 9, '2024-10-01','COM', 215), 
-(2, 3, 9, '2024-11-01','COM', 234), 
-(2, 3, 9, '2024-12-01','COM', 256)
-;
-COMMIT;
-
---faltan los de multas
-
-
 --INSERTS DE AFILIACIONES
 BEGIN;
 INSERT INTO afiliacion (id_sub, id_floristeria) VALUES
@@ -332,19 +243,19 @@ COMMIT;
 --INSERTS DE FACTURAS DE SUBASTAS
 BEGIN;
 INSERT INTO facturas_subastas (num_factura, fecha_emision, total, id_sub, id_floristeria, envio) VALUES
-(20241016, '2024-03-15', 440, 3 , 1, 'SI'), --Factura Subastadora 3 a Floristeria 1
+(20241016, '2024-10-15', 440, 3 , 1, 'SI'), --Factura Subastadora 3 a Floristeria 1
 (20241017, '2024-04-01', 700, 1, 3, 'NO'), --Factura Subastadora 1 a Floristeria 3
 (20241018, '2024-05-10', 770, 1, 5 , 'SI'), --Factura Subastadora 1 a Floristeria 5
-(20241019, '2024-05-17', 800, 2, 2, 'NO'), --Factura Subastadora 2 a Floristeria 2
-(20241020, '2024-06-01', 715, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
+(20241019, '2024-06-17', 800, 2, 2, 'NO'), --Factura Subastadora 2 a Floristeria 2
+(20241020, '2024-11-01', 715, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
 (20241021, '2024-07-19', 550, 2, 6 , 'SI'), --Factura Subastadora 2 a Floristeria 6
 
 (20241022, '2024-06-03', 1200, 1, 5, 'NO'), --Factura Subastadora 1 a Floristeria 5
 (20241023, '2024-06-18', 1100, 2, 2, 'SI'), --Factura Subastadora 2 a Floristeria 2
 (20241024, '2024-06-27', 800, 1, 1 , 'NO'), --Factura Subastadora 1 a Floristeria 1
-(20241025, '2024-06-29', 880, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
-(20241026, '2024-07-02', 500, 3, 3, 'NO'), --Factura Subastadora 3 a Floristeria 3
-(20241027, '2024-11-30', 1210, 2, 6, 'SI') --Factura Subastadora 2 a Floristeria 6
+(20241025, '2024-11-10', 880, 3, 4 , 'SI'), --Factura Subastadora 3 a Floristeria 4
+(20241026, '2024-09-28', 500, 3, 3, 'NO'), --Factura Subastadora 3 a Floristeria 3
+(20241027, '2024-11-25', 1210, 2, 6, 'SI') --Factura Subastadora 2 a Floristeria 6
 ;
 COMMIT;
 
@@ -430,77 +341,92 @@ COMMIT;
 --INSERTS DE HISTORICOS PRECIOS. 
 BEGIN;
 INSERT INTO historicos_precio (id_floristeria, id_catalogo, fecha_inicio, precio_unitario, tamano_tallo, fecha_final) VALUES
--- Radiant Carnation
-(1, 1, '2024-01-01', 12.50, 50.0, '2024-03-31'),  
-(1, 1, '2024-04-01', 13.00, 50.0, NULL),           
+-- Radiant Carnation de 50cm
+(1, 1, '2024-01-01 08:00:00', 1.20, 50.0, '2024-03-31 17:30:00'),  
+(1, 1, '2024-04-01 09:15:00', 1.30, 50.0, NULL),           
 -- Brilliant Tulip
-(1, 2, '2024-01-15', 10.00, 45.0, '2024-03-15'), 
-(1, 2, '2024-03-16', 11.00, 45.0, NULL),          
+(1, 2, '2024-01-15 10:00:00', 0.85, 45.0, '2024-03-15 14:45:00'), 
+(1, 2, '2024-03-16 11:30:00', 1.00, 45.0, NULL),          
 -- Darling Rose
-(2, 3, '2024-01-10', 15.00, 60.0, '2024-04-10'), 
-(2, 3, '2024-04-11', 16.00, 60.0, NULL),           
+(2, 3, '2024-01-10 12:00:00', 1.50, 60.0, '2024-04-10 16:00:00'), 
+(2, 3, '2024-04-11 13:15:00', 1.60, 60.0, NULL),           
 -- Summer Sunflower
-(2, 4, '2024-02-01', 8.00, 70.0, '2024-05-01'),  
-(2, 4, '2024-05-02', 9.00, 70.0, NULL),           
---Joyful Daisy
-(2, 5, '2024-01-20', 5.00, 30.0, '2024-03-20'),  
-(2, 5, '2024-03-21', 5.50, 30.0, NULL),           
+(2, 4, '2024-02-01 14:30:00', 2.00, 70.0, '2024-05-01 19:00:00'),  
+(2, 4, '2024-05-02 15:45:00', 2.30, 70.0, NULL),           
+-- Joyful Daisy
+(2, 5, '2024-01-20 16:00:00', 0.50, 30.0, '2024-03-20 20:15:00'),  
+(2, 5, '2024-03-21 17:30:00', 0.65, 30.0, NULL),           
 -- Magical Hydrangea
-(2, 6, '2024-02-10', 20.00, 80.0, '2024-04-10'), 
-(2, 6, '2024-04-11', 21.00, 80.0, NULL),           
+(2, 6, '2024-02-10 18:00:00', 2.30, 80.0, '2024-04-10 21:45:00'), 
+(2, 6, '2024-04-11 19:15:00', 2.50, 80.0, NULL),           
 -- Radiant Tulip
-(3, 7, '2024-01-05', 10.50, 45.0, '2024-03-05'),
-(3, 7, '2024-03-06', 11.50, 45.0, NULL),
+(3, 7, '2024-01-05 20:00:00', 0.90, 45.0, '2024-03-05 23:30:00'),
+(3, 7, '2024-03-06 21:45:00', 1.00, 45.0, NULL),
 -- Charming Carnation
-(3, 8, '2024-01-15', 12.75, 50.0, '2024-04-15'),
-(3, 8, '2024-04-16', 13.25, 50.0, NULL),
+(3, 8, '2024-01-15 22:00:00', 1.00, 50.0, '2024-04-15 10:00:00'),
+(3, 8, '2024-04-16 23:15:00', 1.20, 50.0, NULL),
 -- Golden Carnation
-(3, 9, '2024-02-01', 13.00, 50.0, '2024-05-01'),
-(3, 9, '2024-05-02', 13.50, 50.0, NULL),
+(3, 9, '2024-02-01 08:30:00', 1.10, 50.0, '2024-05-01 11:30:00'),
+(3, 9, '2024-05-02 14:00:00', 1.15, 50.0, NULL),
 -- Blushing Carnation
-(4, 10, '2024-01-25', 12.25, 50.0, '2024-03-25'),
-(4, 10, '2024-03-26', 12.75, 50.0, NULL),
+(4, 10, '2024-01-25 09:00:00', 1.00, 50.0, '2024-03-25 12:45:00'),
+(4, 10, '2024-03-26 15:30:00', 1.25, 50.0, NULL),
 -- Blinding Carnation
-(4, 11, '2024-02-15', 12.50, 50.0, '2024-04-15'),
-(4, 11, '2024-04-16', 13.00, 50.0, NULL),
+(4, 11, '2024-02-15 18:15:00', 0.95, 50.0, '2024-04-15 20:00:00'),
+(4, 11, '2024-04-16 22:30:00', 1.00, 50.0, NULL),
 -- Vibrant Tulip
-(5, 12, '2024-01-30', 11.00, 45.0, '2024-03-30'),
-(5, 12, '2024-03-31', 11.50, 45.0, NULL),
+(5, 12, '2024-01-30 07:45:00', 0.70, 45.0, '2024-03-30 09:30:00'),
+(5, 12, '2024-03-31 11:00:00', 0.85, 45.0, NULL),
 -- Serenity Tulip
-(5, 13, '2024-02-20', 10.75, 45.0, '2024-05-20'),
-(5, 13, '2024-05-21', 11.25, 45.0, NULL),
+(5, 13, '2024-02-20 13:00:00', 0.75, 45.0, '2024-05-20 15:15:00'),
+(5, 13, '2024-05-21 17:45:00', 0.80, 45.0, NULL),
 -- Aqua Hydrangea
-(6, 14, '2024-02-05', 22.00, 80.0, '2024-04-05'),
-(6, 14, '2024-04-06', 23.00, 80.0, NULL),
+(6, 14, '2024-02-05 19:00:00', 2.10, 80.0, '2024-04-05 20:30:00'),
+(6, 14, '2024-04-06 22:00:00', 2.15, 80.0, NULL),
 -- Mistery Sunflower
-(6, 15, '2024-03-01', 9.00, 70.0, '2023-06-01'),
-(6, 15, '2023-06-02', 9.50, 70.0, NULL);
+(6, 15, '2024-03-01 08:00:00', 1.15, 70.0, '2024-06-01 09:30:00'),
+(6, 15, '2024-06-02 10:45:00', 1.20, 70.0, NULL);
 
+(1, 1, '2024-01-12 08:30:00', 0.80, 30.0, NULL),
+(1, 2, '2024-10-22 09:45:00', 0.40, 20.0, NULL),
+(2, 3, '2024-05-17 10:15:00', 1.10, 40.0, NULL),
+(2, 4, '2024-03-06 11:00:00', 0.80, 25.0, NULL),
+(2, 5, '2024-06-27 12:30:00', 0.80, 35.0, NULL),  -- Corregido el formato de fecha
+(2, 6, '2024-04-21 14:00:00', 0.90, 30.0, NULL),
+(3, 7, '2024-05-22 15:15:00', 0.70, 30.0, NULL),
+(3, 8, '2024-01-15 16:45:00', 0.40, 15.0, NULL),
+(3, 9, '2024-06-04 17:30:00', 0.60, 25.0, NULL),
+(4, 10, '2024-05-14 18:00:00', 0.85, 30.0, NULL),
+(4, 11, '2024-05-23 19:15:00', 0.60, 30.0, NULL),
+(5, 12, '2024-10-19 20:30:00', 0.50, 25.0, NULL),
+(5, 13, '2024-07-07 21:00:00', 0.30, 15.0, NULL),
+(6, 14, '2024-01-12 22:00:00', 1.15, 40.0, NULL),
+(6, 15, '2024-08-20 23:45:00', 0.70, 38.0, NULL);
 
 --INSERTS DE BOUQUETS. 
 BEGIN;
 INSERT INTO bouquets (id_floristeria, id_catalogo, cantidad, descripcion, tamano_tallo) VALUES
 (1, 1, 20, 'Bouquet Radiant Carnations', 50),
-(1, 1, 20, 'Bouquet Radiant Carnations', 30),
-(1, 2, 5, 'Bouquet Brilliant Tulips', 70),
+(1, 1, 18, 'Bouquet Radiant Carnations', 30), 
+(1, 2, 5, 'Bouquet Brilliant Tulips', 45),
 
-(2, 3, 15, 'Bouquet Darling Roses', 40),
-(2, 3, 15, 'Bouquet Darling Roses', 50),
-(2, 4, 10, 'Bouquet Summer Sunflowers', 60),
+(2, 3, 15, 'Bouquet Darling Roses', 60),
+(2, 3, 19, 'Bouquet Darling Roses', 50), --
+(2, 4, 10, 'Bouquet Summer Sunflowers', 70),
 (2, 5, 20,'Bouquet Joyful Daisys', 30),
-(2, 6, 15, 'Bouquet Magical Hydrangeas', 50),
+(2, 6, 15, 'Bouquet Magical Hydrangeas', 80),
 
-(3, 7, 30, 'Bouquet Radiant Tulips', 70),
-(3, 9, 10, 'Bouquet Golden Carnations', 60),
+(3, 7, 5, 'Bouquet Radiant Tulips', 45),
+(3, 9, 10, 'Bouquet Golden Carnations', 50),
 
-(4, 10, 40, 'Bouquet Blushing Carnations', 20 ),
-(4, 11, 45, 'Bouquet Blinding Carnations', 45),
+(4, 10, 15, 'Bouquet Blushing Carnations', 50 ),
+(4, 11, 10, 'Bouquet Blinding Carnations', 55),
 
-(5, 12, 55, 'Bouquet Vibrant Tulips', 50),
-(5, 13, 30, 'Bouquet Serenity Tulips', 70),
+(5, 12, 25, 'Bouquet Vibrant Tulips', 45),
+(5, 13, 30, 'Bouquet Serenity Tulips', 45),
 
-(6, 14, 30, 'Bouquet Aqua Hydrangeas', 45),
-(6, 15,  25, 'Bouquet Mistery Sunflowers', 65)
+(6, 14, 30, 'Bouquet Aqua Hydrangeas', 80),
+(6, 15,  25, 'Bouquet Mistery Sunflowers', 70)
 ;
 COMMIT;
 
