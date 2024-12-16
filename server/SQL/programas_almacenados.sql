@@ -835,7 +835,294 @@ $$ LANGUAGE plpgsql;
 
 
 
+--Funcion para ejecutar el trigger que valida si es un dia laboral y/o si la factura fue realizada entre las 8:00 y las 16:00
+CREATE OR REPLACE FUNCTION validar_fecha_factura()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Verificar si la fecha de emisión es un día laborable (lunes a viernes)
+    IF EXTRACT(DOW FROM NEW.fecha_emision) IN (0, 6) THEN
+        RAISE EXCEPTION 'La factura solo puede ser emitida en días laborables (lunes a viernes)';
+    END IF;
 
+    -- Verificar si la hora de emisión está entre las 8:00 AM y las 3:00 PM
+    IF NEW.fecha_emision::time < '08:00:00' OR NEW.fecha_emision::time > '15:00:00' THEN
+        RAISE EXCEPTION 'La factura solo puede ser emitida entre las 8:00 AM y las 3:00 PM';
+    END IF;
 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
+--Funcion para ejecutar el trigger que valida si la fechas final es mayor que la fecha inicial en el historico precios 
+CREATE OR REPLACE FUNCTION validar_fechas_historicos_precio()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_final IS NOT NULL AND NEW.fecha_final <= NEW.fecha_inicio THEN
+        RAISE EXCEPTION 'La fecha final debe ser mayor que la fecha de inicio (en histórico de id (%, %))', NEW.id_floristeria, NEW.id_catalogo;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
+--Funcion para ejecutar el trigger que valida si la fechas de emision es posterior a la actual 
+CREATE OR REPLACE FUNCTION validar_fecha_factura_no_futura()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_emision > CURRENT_TIMESTAMP THEN
+        RAISE EXCEPTION 'No se puede registrar una factura con una fecha futura: %', NEW.fecha_emision;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Función que crea una factura de subasta sin lotes, con total en 0
+CREATE OR REPLACE FUNCTION crear_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_floristeria VARCHAR(40),
+    quiere_envio VARCHAR(2)
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    id_subastadora INT;
+    id_florist INT;
+    fecha_emision TIMESTAMP;
+    numero_factura_anterior NUMERIC(12);
+    nombre_florist VARCHAR(40);
+    nueva_factura facturas_subastas;
+BEGIN
+    nombre_florist := nombre_floristeria;
+    -- Verifica que quiere_envio sea 'SI' o 'NO'
+    IF quiere_envio NOT IN ('SI', 'NO') THEN
+        RAISE EXCEPTION 'El valor de quiere_envio debe ser "SI" o "NO"';
+    END IF;
+
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO id_florist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
+    -- Comprobar que la floristeria está afiliada a la subastadora
+    IF NOT EXISTS (
+        SELECT 1
+        FROM afiliacion
+        WHERE id_sub = id_subastadora
+          AND id_floristeria = id_florist
+    ) THEN
+        RAISE EXCEPTION 'La floristería no está afiliada a la subastadora';
+    END IF;
+
+    -- Obtiene la fecha actual
+    fecha_emision := CURRENT_TIMESTAMP;
+
+    numero_factura_anterior := (SELECT MAX(num_factura) FROM facturas_subastas);
+
+    -- Si no se encuentra número de factura anterior, num_factura se pone como 0
+    IF numero_factura_anterior IS NULL THEN
+        numero_factura_anterior := 0;
+    END IF;
+
+    -- Inserta la factura en la tabla facturas_subastas
+    INSERT INTO facturas_subastas(num_factura, fecha_emision, total, id_sub, id_floristeria, envio)
+    VALUES (numero_factura_anterior + 1, fecha_emision, 0, id_subastadora, id_florist, quiere_envio)
+    RETURNING * INTO nueva_factura;
+    RETURN NEXT nueva_factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION crear_lote_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_productor VARCHAR(40),
+    nombre_propio_flor VARCHAR(40),
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT,
+    numero_factura NUMERIC(12)
+)
+RETURNS SETOF lotes_flor AS $$
+DECLARE
+    id_subastadora INT;
+    id_productor INT;
+    id_cont INT;
+    vbn_flor INT;
+    nuevo_lote lotes_flor;
+BEGIN
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id del productor
+    SELECT id_prod INTO id_productor
+    FROM productores
+    WHERE nombre_prod = nombre_productor;
+
+    -- Obtiene el vbn de la flor desde el catalogo del productor
+    SELECT vbn INTO vbn_flor
+    FROM catalogos_productores
+    WHERE id_productor = id_productor
+      AND nombre_propio = nombre_propio_flor;
+
+    -- Obtiene el id del contrato activo del productor con la subastadora
+    SELECT id_contrato INTO id_cont
+    FROM contratos
+    WHERE id_sub = id_subastadora
+      AND id_prod = id_productor
+      AND cancelado = 'NO'
+      AND CURRENT_DATE BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year'); -- los contratos son válidos por un año
+
+    -- Si no se encontró un contrato activo, lanza una excepción
+    IF id_cont IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo entre el productor % y la subastadora %', nombre_productor, nombre_subastadora;
+    END IF;
+
+    -- Verifica que el vbn se encuentre en el detalle de contrato
+    IF NOT EXISTS (
+        SELECT 1
+        FROM det_contratos
+        WHERE id_sub = id_subastadora
+          AND id_prod = id_productor
+          AND id_contrato = id_cont
+          AND vbn = vbn_flor
+    ) THEN
+        RAISE EXCEPTION 'El VBN % no está en el detalle del contrato activo', vbn_flor;
+    END IF;
+
+    -- Inserta el lote en la tabla lotes_flor
+    INSERT INTO lotes_flor(cantidad, precio_inicial, BI, precio_final, id_sub, id_prod, id_contrato, vbn, num_factura)
+    VALUES (cantidad_flores, precio_inicial, bi_lote, precio_final, id_subastadora, id_productor, id_cont, vbn_flor, numero_factura)
+    RETURNING * INTO nuevo_lote;
+    RETURN NEXT nuevo_lote;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Record que es necesario para generar_factura_subasta
+CREATE TYPE lote_flor AS (
+    nombre_productor VARCHAR(40),
+    nombre_propio_flor VARCHAR(40),
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT
+);
+
+-- Funcion que genera una factura de subasta con lotes de flores, devuelve la factura creada
+CREATE OR REPLACE FUNCTION generar_factura_subasta(
+    nombre_subast VARCHAR(40),
+    nombre_florist VARCHAR(40),
+    quiere_envio VARCHAR(2),
+    lotes lote_flor[]
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    factura facturas_subastas;
+    lote lote_flor;
+BEGIN
+    -- Crea la factura
+    SELECT fn.* INTO factura FROM crear_factura(nombre_subast, nombre_florist, quiere_envio) fn;
+
+    -- Inserta los lotes en la factura
+    FOREACH lote IN ARRAY lotes
+    LOOP
+        -- Ejecuta la función crear_lote_factura
+        PERFORM crear_lote_factura(
+            nombre_subast,
+            lote.nombre_productor,
+            lote.nombre_propio_flor,
+            lote.cantidad_flores,
+            lote.bi_lote,
+            lote.precio_inicial,
+            lote.precio_final,
+            factura.num_factura
+        );
+    END LOOP;
+
+    RETURN NEXT factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TYPE flor AS (
+	nombre_propio VARCHAR(40),
+	nombre_comun VARCHAR(40),
+	genero_especie VARCHAR(40),
+    tamano_tallo NUMERIC(5,2),
+	precio NUMERIC(5,2),
+	coincidencias INT
+);
+
+-- ESTE ES EL RECOMENDADOR
+CREATE OR REPLACE FUNCTION recomendar_flores(
+	nombre_florist VARCHAR(40),
+	colores_deseados VARCHAR(15)[],
+	descripciones_significados VARCHAR(300)[]
+)
+RETURNS TABLE(nombre_propio_flor VARCHAR(40), nombre_comun_flor VARCHAR(40), genero_especie_flor VARCHAR(40), tamano_tallo_flor NUMERIC(5, 2), precio_flor NUMERIC(5,2)) AS $$
+DECLARE
+	flores flor[];
+	flor flor;
+    idflorist INT;
+BEGIN
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO idflorist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
+	FOR flor IN
+		SELECT cf.nombre as nombre_propio, fc.nombre_comun, fc.genero_especie, hp.tamano_tallo, hp.precio_unitario, 0 AS coincidencias
+		FROM catalogos_floristerias cf
+		JOIN flores_corte fc ON cf.id_flor_corte = fc.id_flor_corte
+		JOIN historicos_precio hp ON cf.id_catalogo = hp.id_catalogo
+		WHERE cf.id_floristeria = idflorist
+		AND hp.fecha_final IS NULL
+	LOOP
+		IF colores_deseados IS NOT NULL AND array_length(colores_deseados, 1) > 0 THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN colores c ON e.codigo_color = c.codigo_color
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(c.nombre) in (SELECT lower(nombre) FROM unnest(colores_deseados) AS nombre)
+                AND cf.id_floristeria = idflorist
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		IF descripciones_significados IS NOT NULL AND array_length(descripciones_significados, 1) > 0 THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN significados s ON e.id_significado = s.id_significado
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(s.descripcion) in (SELECT lower(descripcion) FROM unnest(descripciones_significados) AS descripcion)
+                AND cf.id_floristeria = idflorist
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		flores := flores || flor;
+	END LOOP;
+
+	-- Si hay coincidencias, se retornan las flores ordenadas por coincidencias.
+
+	RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+	FROM unnest(flores) AS f
+	WHERE f.coincidencias > 0
+	ORDER BY f.coincidencias DESC;
+
+	-- Si no hay coincidencias, se retornan todas las flores de la floristería en orden aleatorio.
+
+	IF NOT FOUND THEN
+		RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+		FROM unnest(flores) AS f
+        ORDER BY random();
+	END IF;
+END;
+$$ LANGUAGE plpgsql;

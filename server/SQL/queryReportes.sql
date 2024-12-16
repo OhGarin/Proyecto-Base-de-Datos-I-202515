@@ -273,14 +273,6 @@ ORDER BY
     fc.nombre_comun
 
 
-SELECT 
-    b.descripcion AS descripcion_bouquet,
-    b.cantidad AS cantidad_flores
-FROM 
-    bouquets b
-WHERE 
-    b.cantidad > 0
-
 --TERMINAN QUERYS PARA : CATALOGO DE FLORISTERIA
 
 --COMIENZAN QUERYS PARA REPORTE : FACTURAS EN SUBASTAS
