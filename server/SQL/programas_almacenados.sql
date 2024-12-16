@@ -443,6 +443,11 @@ BEGIN
 
     numero_factura_anterior := (SELECT MAX(num_factura) FROM facturas_subastas);
 
+    -- Si no se encuentra número de factura anterior, num_factura se pone como 0
+    IF numero_factura_anterior IS NULL THEN
+        numero_factura_anterior := 0;
+    END IF;
+
     -- Inserta la factura en la tabla facturas_subastas
     INSERT INTO facturas_subastas(num_factura, fecha_emision, total, id_sub, id_floristeria, envio)
     VALUES (numero_factura_anterior + 1, fecha_emision, 0, id_subastadora, id_florist, quiere_envio)
