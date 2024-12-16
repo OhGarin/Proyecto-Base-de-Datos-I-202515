@@ -1,5 +1,5 @@
 CREATE TABLE paises(	
-	 id_pais SMALLINT DEFAULT nextval('seq_paises') CONSTRAINT pk_pais PRIMARY KEY,
+	 id_pais INT DEFAULT nextval('seq_paises') CONSTRAINT pk_pais PRIMARY KEY,
  	 nombre_pais VARCHAR(30) NOT NULL UNIQUE
 );
 
@@ -20,9 +20,9 @@ CREATE TABLE flores_corte(
 	id_flor_corte INT DEFAULT nextval('seq_flores_corte') CONSTRAINT pk_florcorte PRIMARY KEY,
 	nombre_comun VARCHAR(40) NOT NULL UNIQUE,
 	genero_especie VARCHAR(40) NOT NULL UNIQUE,
-	etimologia VARCHAR(200) NOT NULL,
+	etimologia VARCHAR(250) NOT NULL,
 	tem_conservacion NUMERIC(4,2) NOT NULL,
-	colores VARCHAR(200) NOT NULL
+	colores VARCHAR(250) NOT NULL
 );
 
 CREATE TABLE subastadoras(
@@ -75,7 +75,7 @@ CREATE TABLE pagos_multas(
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
 	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos)
-	--CONSTRAINT check_monto CHECK(monto_euros>0)
+	CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
 CREATE TABLE afiliacion(
@@ -162,10 +162,10 @@ CREATE TABLE catalogos_floristerias(
 CREATE TABLE historicos_precio(
 	id_floristeria INT NOT NULL,
 	id_catalogo INT NOT NULL,
-	fecha_inicio DATE NOT NULL,
+	fecha_inicio TIMESTAMP NOT NULL,
 	precio_unitario NUMERIC(5,2) NOT NULL,
 	tamano_tallo NUMERIC(5,2),
-	fecha_final DATE,
+	fecha_final TIMESTAMP,
 	CONSTRAINT pk_historico_precio PRIMARY KEY (id_floristeria,id_catalogo,fecha_inicio),
 	CONSTRAINT check_precio_unitario_flor CHECK(precio_unitario>0),
 	CONSTRAINT check_tamano_tallo CHECK(tamano_tallo>0)
