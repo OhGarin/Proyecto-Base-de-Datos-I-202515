@@ -1509,9 +1509,6 @@ BEGIN
 		IF v_fecha_pago IS NULL THEN
 			v_fecha_pago =  date_trunc('month', mes);
 		END IF;
-
-
-		RAISE NOTICE 'A VER %',  date_trunc('month', mes);
 		
         IF p_fecha_consulta < date_trunc('month', mes) + INTERVAL '1 month' 
 		AND v_multa_total = 0 AND EXTRACT(DAY FROM p_fecha_consulta) > 5 THEN
@@ -1551,19 +1548,14 @@ CREATE OR REPLACE FUNCTION estatus_general_productor(
     p_nombre_sub VARCHAR(40),
     p_nombre_prod VARCHAR(40),
     p_fecha_consulta DATE
-) RETURNS TABLE (
-    estatus_multas TEXT,
-    estatus_comisiones TEXT,
-    estatus_general TEXT,
-    mensaje TEXT
-) AS $$
+) RETURNS VOID AS $$
 DECLARE
-    v_estatus_multas TEXT;
-    v_estatus_comisiones TEXT;
     v_morosos_count_multas INT;
     v_solventes_count_multas INT;
     v_morosos_count_comisiones INT;
     v_solventes_count_comisiones INT;
+    v_estatus_general TEXT;
+    v_mensaje TEXT;
 BEGIN
     SELECT 
         COUNT(CASE WHEN estatus = 'Moroso' THEN 1 END),
@@ -1577,23 +1569,19 @@ BEGIN
     INTO v_morosos_count_comisiones, v_solventes_count_comisiones
     FROM estatus_productor_comisiones(p_nombre_sub, p_nombre_prod, p_fecha_consulta);
 
+    -- Determina el estatus general
     IF v_morosos_count_multas > 0 OR v_morosos_count_comisiones > 0 THEN
-        estatus_general := 'Moroso';
+        v_estatus_general := 'Moroso';
     ELSE
-        estatus_general := 'Solvente';
+        v_estatus_general := 'Solvente';
     END IF;
 
-    mensaje := 'El productor ' || p_nombre_prod || ' ante la subastadora ' || 
-               p_nombre_sub || ' en la fecha ' || p_fecha_consulta || 
-               ' tiene ' || v_morosos_count_multas || ' estados morosos por multas y ' || 
-               v_morosos_count_comisiones || ' estados morosos por comisiones. ' ||
-               ' El estatus general es: ' || estatus_general || '.';
-
-    RETURN QUERY SELECT 
-        CASE WHEN v_morosos_count_multas > 0 THEN 'Moroso' ELSE 'Solvente' END AS estatus_multas,
-        CASE WHEN v_morosos_count_comisiones > 0 THEN 'Moroso' ELSE 'Solvente' END AS estatus_comisiones,
-        estatus_general,
-        mensaje;
+    v_mensaje := 'El productor ' || p_nombre_prod || ' ante la subastadora ' || 
+                 p_nombre_sub || ' en la fecha ' || p_fecha_consulta || 
+                 ' tiene ' || v_morosos_count_multas || ' estados morosos por multas y ' || 
+                 v_morosos_count_comisiones || ' estados morosos por comisiones. ' ||
+                 ' El estatus general es: ' || v_estatus_general || '.';
+    RAISE NOTICE '%', v_mensaje;
 END;
 $$ LANGUAGE plpgsql;
 
