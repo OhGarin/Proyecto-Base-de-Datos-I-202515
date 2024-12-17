@@ -475,7 +475,7 @@ BEGIN
     WHERE id_prod = NEW.id_prod
       AND clasificacion = 'CG'
       AND (cancelado = 'NO' OR cancelado IS NULL)
-      AND fecha_inicio >= NOW() - INTERVAL '1 year';  
+      AND fecha_contrato >= NOW() - INTERVAL '1 year';  
 
     IF (suma_porcentajes + NEW.porc_total_prod) > 100.00 THEN
         RAISE EXCEPTION 'La suma de todos los contratos CG para el productor no puede exceder el 100%%. Suma actual: %, nuevo contrato: %', suma_porcentajes, NEW.porc_total_prod;
@@ -1981,10 +1981,10 @@ INSERT INTO det_facturas_floristerias (cantidad, id_floristeria, num_factura, id
 (1, 1, 1002, 1, 1, 150.50, 4.0, 4.5, 4.25),  -- Detalle 1 para factura 1002
 (1, 1, 1002, 1, 2, 50.00, 4.0, 4.0, 4.00),   -- Detalle 2 para factura 1002
 
-(1, 2, 1003, 3, NULL, 60.00, 3.5, 4.0, 3.75),   -- Detalle 1 para factura 1003
+(1, 2, 1003, 3, NULL, 60.00, NULL, NULL, NULL),   -- Detalle 1 para factura 1003
 (1, 2, 1003, 4, NULL, 60.00, 4.0, 4.0, 4.00),   -- Detalle 2 para factura 1003
 
-(1, 2, 1004, 6, 8, 90.25, 3.0, 3.5, 3.25),   -- Detalle 1 para factura 1004
+(1, 2, 1004, 6, 8, 90.25, NULL, NULL, NULL),   -- Detalle 1 para factura 1004
 (1, 2, 1004, 5, 7, 90.00, 4.0, 4.5, 4.25),   -- Detalle 2 para factura 1004
 
 (1, 3, 1005, 7, NULL, 49.99, 3.0, 4.0, 3.50),   -- Detalle 1 para factura 1005
