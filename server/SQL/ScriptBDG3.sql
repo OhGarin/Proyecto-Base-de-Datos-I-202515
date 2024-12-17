@@ -511,7 +511,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_validar_porcentaje_total_CG
-BEFORE INSERT ON contratos
+BEFORE INSERT OR UPDATE ON contratos
 FOR EACH ROW
 WHEN (NEW.clasificacion = 'CG')
 EXECUTE FUNCTION validar_porcentaje_total_CG();
@@ -883,8 +883,6 @@ BEGIN
         subastadoras s ON c.id_sub = s.id_sub
     WHERE 
         c.cancelado = 'NO' OR c.cancelado IS NULL 
-      AND 
-        c.fecha_contrato <= CURRENT_DATE
       AND 
         c.fecha_contrato + INTERVAL '1 year' >= CURRENT_DATE;  
 END;
@@ -2258,7 +2256,7 @@ INSERT INTO bouquets (id_floristeria, id_catalogo, cantidad, descripcion, tamano
 (1, 2, 5, 'Bouquet Brilliant Tulips', 45),
 
 (2, 3, 15, 'Bouquet Darling Roses', 60),
-(2, 3, 19, 'Bouquet Darling Roses', 50), --
+(2, 3, 19, 'Bouquet Darling Roses', 50), 
 (2, 4, 10, 'Bouquet Summer Sunflowers', 70),
 (2, 5, 20,'Bouquet Joyful Daisys', 30),
 (2, 6, 15, 'Bouquet Magical Hydrangeas', 80),
@@ -2332,8 +2330,8 @@ INSERT INTO det_facturas_floristerias (cantidad, id_floristeria, num_factura, id
 (1, 2, 1004, 6, 8, 90.25, 3.0, 3.5, 3.25),   -- Detalle 1 para factura 1004
 (1, 2, 1004, 5, 7, 90.00, 4.0, 4.5, 4.25),   -- Detalle 2 para factura 1004
 
-(1, 3, 1005, 7, NULL, 49.99, 3.0, 4.0, 3.50),   -- Detalle 1 para factura 1005
-(1, 3, 1005, 8, NULL, 50.00, 3.5, 4.0, 3.75),  -- Detalle 2 para factura 1005
+(1, 3, 1005, 7, NULL, 49.99, NULL, NULL, NULL),   -- Detalle 1 para factura 1005
+(1, 3, 1005, 8, NULL, 50.00, NULL, NULL, NULL),  -- Detalle 2 para factura 1005
 
 (1, 3, 1006, 9, 10, 250.00, 5.0, 5.0, 5.00), -- Detalle 1 para factura 1006
 
