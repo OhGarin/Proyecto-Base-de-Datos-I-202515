@@ -536,7 +536,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trigger_validar_contrato_activo
-BEFORE INSERT OR UPDATE ON contratos
+BEFORE INSERT ON contratos
 FOR EACH ROW EXECUTE FUNCTION validar_contrato_activo();
 
 --Funcion para validar que si en un contrato la categoria esta clasificada como KA, que sea holandesa
