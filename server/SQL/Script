@@ -1804,15 +1804,19 @@ RETURNS SETOF facturas_subastas AS $$
 DECLARE
     factura facturas_subastas;
     lote lote_flor;
+    n_lote lotes_flor;
+    total_factura FLOAT;
 BEGIN
     -- Crea la factura
     SELECT fn.* INTO factura FROM crear_factura(nombre_subast, nombre_florist, quiere_envio) fn;
+
+    total_factura := 0;
 
     -- Inserta los lotes en la factura
     FOREACH lote IN ARRAY lotes
     LOOP
         -- Ejecuta la función crear_lote_factura
-        PERFORM crear_lote_factura(
+        n_lote := crear_lote_factura(
             nombre_subast,
             lote.nombre_productor,
             lote.nombre_propio_flor,
@@ -1822,7 +1826,21 @@ BEGIN
             lote.precio_final,
             factura.num_factura
         );
+
+        -- Suma el precio final de cada lote al total de la factura
+        total_factura := total_factura + n_lote.precio_final;
     END LOOP;
+
+    -- Si quiere envío se le suma el 10% al total de la factura
+    IF quiere_envio = 'SI' THEN
+        total_factura := total_factura * 1.10;
+    END IF;
+
+    -- Actualiza el total de la factura
+    UPDATE facturas_subastas
+    SET total = round(total_factura::numeric, 2)
+    WHERE num_factura = factura.num_factura
+    RETURNING * INTO factura;
 
     RETURN NEXT factura;
 END;
