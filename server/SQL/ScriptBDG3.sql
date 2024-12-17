@@ -1597,6 +1597,77 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+--RECOMENDADOR
+CREATE OR REPLACE FUNCTION recomendar_flores(
+	nombre_florist VARCHAR(40),
+	colores_deseados VARCHAR(15)[],
+	descripciones_significados VARCHAR(300)[]
+)
+RETURNS TABLE(nombre_propio_flor VARCHAR(40), nombre_comun_flor VARCHAR(40), genero_especie_flor VARCHAR(40), tamano_tallo_flor NUMERIC(5, 2), precio_flor NUMERIC(5,2)) AS $$
+DECLARE
+	flores flor[];
+	flor flor;
+    idflorist INT;
+BEGIN
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO idflorist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
+	FOR flor IN
+		SELECT cf.nombre as nombre_propio, fc.nombre_comun, fc.genero_especie, hp.tamano_tallo, hp.precio_unitario, 0 AS coincidencias
+		FROM catalogos_floristerias cf
+		JOIN flores_corte fc ON cf.id_flor_corte = fc.id_flor_corte
+		JOIN historicos_precio hp ON cf.id_catalogo = hp.id_catalogo
+		WHERE cf.id_floristeria = idflorist
+		AND hp.fecha_final IS NULL
+	LOOP
+		IF colores_deseados IS NOT NULL AND array_length(colores_deseados, 1) > 0 THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN colores c ON e.codigo_color = c.codigo_color
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(c.nombre) in (SELECT lower(nombre) FROM unnest(colores_deseados) AS nombre)
+                AND cf.id_floristeria = idflorist
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		IF descripciones_significados IS NOT NULL AND array_length(descripciones_significados, 1) > 0 THEN
+			IF flor.nombre_propio IN (
+				SELECT cf.nombre
+				FROM enlaces e
+				JOIN significados s ON e.id_significado = s.id_significado
+				JOIN flores_corte fc ON e.id_flor_corte = fc.id_flor_corte
+				JOIN catalogos_floristerias cf ON e.id_flor_corte = cf.id_flor_corte
+				WHERE lower(s.descripcion) in (SELECT lower(descripcion) FROM unnest(descripciones_significados) AS descripcion)
+                AND cf.id_floristeria = idflorist
+			) THEN
+				flor.coincidencias := flor.coincidencias + 1;
+			END IF;
+		END IF;
+		flores := flores || flor;
+	END LOOP;
+
+	-- Si hay coincidencias, se retornan las flores ordenadas por coincidencias.
+
+	RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+	FROM unnest(flores) AS f
+	WHERE f.coincidencias > 0
+	ORDER BY f.coincidencias DESC;
+
+	-- Si no hay coincidencias, se retornan todas las flores de la floristería en orden aleatorio.
+
+	IF NOT FOUND THEN
+		RETURN QUERY SELECT nombre_propio as nombre_propio_flor, nombre_comun as nombre_comun_flor, genero_especie as genero_especie_flor, tamano_tallo as tamano_tallo_flor, precio as precio_flor
+		FROM unnest(flores) AS f
+        ORDER BY random();
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 --TRIGGERS Y PROGRAMAS ALMACENADOS FIN
 
 --INSERTS INICIO
@@ -1637,7 +1708,27 @@ INSERT INTO flores_corte (nombre_comun, genero_especie, etimologia, tem_conserva
 ('Crisantemo', 'Chrysanthemum morifolium', 'Proviene del griego "chrysos" (oro) y "anthemon" (flor). Venerada en muchas culturas, especialmente en Asia, simboliza longevidad y felicidad, siendo parte de diversas tradiciones.', 16.00, 'Viene en colores diversos como amarillo, blanco, rosa y púrpura. Cada color tiene sus variaciones y simbolismos, aportando rica diversidad a arreglos florales y celebraciones en muchas culturas.')
 ;
 
---SIGNIFICADOS
+INSERT INTO significados (tipo, descripcion) VALUES
+('sent', 'amor'),
+('sent', 'pasión'),
+('sent', 'alegría'),
+('sent', 'dulzura'),
+('sent', 'serenidad'),
+('sent', 'pureza'),
+('sent', 'entusiasmo'),
+('sent', 'gratitud'),
+('sent', 'esperanza'),
+('sent', 'nostalgia'),
+('ocas', 'aniversario'),
+('ocas', 'cortejo'),
+('ocas', 'cumpleaños'),
+('ocas', 'felicitaciones'),
+('ocas', 'dia de la madre'),
+('ocas', 'funeral'),
+('ocas', 'graduacion'),
+('ocas', 'matrimonio'),
+('ocas', 'consuelo')
+;
 
 INSERT INTO subastadoras (nombre_sub, id_pais, url_imagen) VALUES 
 ('VGB Flowers', (SELECT id_pais FROM paises WHERE nombre_pais = 'Holanda'), 'https://www.vgb.nl/files/logo.png'),
@@ -1673,7 +1764,17 @@ INSERT INTO contactos_empleados (id_floristeria, primer_nombre_rep, primer_apell
 (1, 'Isabel', 'Mendoza', 'López', 987654321, '001234567891')  -- USA
 ;
 
---ENLACES
+INSERT INTO enlaces (id_significado, descripcion, id_flor_corte, codigo_color) VALUES
+(1, 'rosas rojas', 1, 'ca1b1b'),  
+(1, 'rosas blancas', 1, 'ffffff'),  
+(2, 'claveles rosas', 2, 'c5388b'),  
+(5, 'lirios blancos', 3, 'ffffff'),  
+(7, 'tulipanes rojos', 4, 'ca1b1b'),  
+(8, 'girasoles amarillos', 5, 'fbf500'),  
+(8, 'girasoles naranjas', 5, 'ffa500'), 
+(9, 'margaritas amarillas', 6, 'fbf500'), 
+(10, 'freesias lavanda', 7, 'e6e6fa')
+;
 
 INSERT INTO catalogos_productores (id_productor, vbn, nombre_propio, descripcion, id_flor, codigo_color) VALUES
 (1, 101705, 'Velvet Rose', 'Símbolo eterno del amor y la pasión, cautiva con su belleza intensa y fragancia dulce', 1, 'ca1b1b'), -- Rosa, color rojo, catalogo de rosas del productor 1
