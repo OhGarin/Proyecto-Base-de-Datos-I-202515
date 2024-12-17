@@ -1833,7 +1833,7 @@ CREATE OR REPLACE FUNCTION crear_lote_factura(
 RETURNS SETOF lotes_flor AS $$
 DECLARE
     id_subastadora INT;
-    id_productor INT;
+    id_productor_f INT;
     id_cont INT;
     vbn_flor INT;
     nuevo_lote lotes_flor;
@@ -1844,21 +1844,21 @@ BEGIN
     WHERE nombre_sub = nombre_subastadora;
 
     -- Obtiene el id del productor
-    SELECT id_prod INTO id_productor
+    SELECT id_prod INTO id_productor_f
     FROM productores
     WHERE nombre_prod = nombre_productor;
 
     -- Obtiene el vbn de la flor desde el catalogo del productor
     SELECT vbn INTO vbn_flor
     FROM catalogos_productores
-    WHERE id_productor = id_productor
+    WHERE id_productor = id_productor_f
       AND nombre_propio = nombre_propio_flor;
 
     -- Obtiene el id del contrato activo del productor con la subastadora
     SELECT id_contrato INTO id_cont
     FROM contratos
     WHERE id_sub = id_subastadora
-      AND id_prod = id_productor
+      AND id_prod = id_productor_f
       AND cancelado = 'NO'
       AND CURRENT_DATE BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year'); -- los contratos son válidos por un año
 
@@ -1872,7 +1872,7 @@ BEGIN
         SELECT 1
         FROM det_contratos
         WHERE id_sub = id_subastadora
-          AND id_prod = id_productor
+          AND id_prod = id_productor_f
           AND id_contrato = id_cont
           AND vbn = vbn_flor
     ) THEN
@@ -1881,7 +1881,7 @@ BEGIN
 
     -- Inserta el lote en la tabla lotes_flor
     INSERT INTO lotes_flor(cantidad, precio_inicial, BI, precio_final, id_sub, id_prod, id_contrato, vbn, num_factura)
-    VALUES (cantidad_flores, precio_inicial, bi_lote, precio_final, id_subastadora, id_productor, id_cont, vbn_flor, numero_factura)
+    VALUES (cantidad_flores, precio_inicial, bi_lote, precio_final, id_subastadora, id_productor_f, id_cont, vbn_flor, numero_factura)
     RETURNING * INTO nuevo_lote;
     RETURN NEXT nuevo_lote;
 END;
