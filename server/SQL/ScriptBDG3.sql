@@ -2050,8 +2050,8 @@ INSERT INTO contratos (id_sub, id_prod, fecha_contrato, clasificacion, porc_tota
 (2, 1, '2023-06-15', 'CA', 65.00, 'NO', NULL ), -- Productor 1 con Subastador 2, vencido
 (2, 3, '2023-05-17', 'CG', 30.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, vencido
 
-(1, 3, '2023-12-18', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido SUBASTADORA 1. Ej de va al dia con sus pagos, se vence el dia de la evualucacion, para renovar
-(2, 1, '2024-06-16', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido EJ para que tenga comisiones no pagadas y multas, para cancelar contrato
+(1, 3, '2023-12-18', 'CG', 15.00, 'NO', NULL), -- Productor 3 que tiene contratos con v companias, valido 
+(2, 1, '2024-06-16', 'CA', 60.00, 'NO', 3), -- Productor 1 con Subastador 2,  valido
 (2, 2, '2024-06-16', 'KA', 100.00, 'NO', NULL), -- Productor 2 con Subastador 2, ofrece el 100% aca, valido
 (3, 3, '2024-09-24', 'CG', 20.00, 'NO', NULL), -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
 (2, 3, '2024-05-18', 'CG', 30.00, 'NO', 4) -- Productor 3 que tiene contratos con varias companias, valido SUBASTADORA 3
