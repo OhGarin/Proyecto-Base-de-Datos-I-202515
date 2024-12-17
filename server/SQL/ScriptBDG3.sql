@@ -200,7 +200,7 @@ CREATE TABLE pagos_multas(
 	monto_euros FLOAT NOT NULL,
 	tipo VARCHAR(3) NOT NULL,
 	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
-	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos)
+	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
 	CONSTRAINT check_monto CHECK(monto_euros>0)
 );
 
@@ -474,7 +474,7 @@ BEGIN
     FROM contratos
     WHERE id_prod = NEW.id_prod
       AND clasificacion = 'CG'
-      AND cancelado = 'NO'
+      AND (cancelado = 'NO' OR cancelado IS NULL)
       AND fecha_inicio >= NOW() - INTERVAL '1 year';  
 
     IF (suma_porcentajes + NEW.porc_total_prod) > 100.00 THEN
@@ -503,7 +503,7 @@ BEGIN
     WHERE id_sub = NEW.id_sub
       AND id_prod = NEW.id_prod
       AND clasificacion = 'CG'
-      AND cancelado = 'NO'
+      AND (cancelado = 'NO' OR cancelado IS NULL)
       AND NEW.fecha_contrato BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year');
 
     IF contrato_existente > 0 THEN
@@ -532,7 +532,7 @@ BEGIN
     FROM contratos c
     WHERE c.id_prod = NEW.id_prod
       AND c.clasificacion = 'CG'
-      AND c.cancelado = 'NO'
+      AND (cancelado = 'NO' OR cancelado IS NULL)
       AND NEW.fecha_contrato BETWEEN c.fecha_contrato AND (c.fecha_contrato + INTERVAL '1 year')
     LIMIT 1;
 
@@ -800,14 +800,14 @@ BEGIN
     RETURN QUERY
     SELECT 
         c.id_sub, 
-        s.nombre_sub  
+        s.nombre_sub, 
         c.id_prod, 
         p.nombre_prod,
         c.id_contrato, 
         c.fecha_contrato, 
-        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento 
+        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento,
         c.clasificacion, 
-        c.porc_total_prod, 
+        c.porc_total_prod
     FROM 
         contratos c
     JOIN 
@@ -827,27 +827,27 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION obtener_contratos_vencidos()
 RETURNS TABLE (
     contrato_id_sub INT,
-    subastador_nombre VARCHAR(100)
+    subastador_nombre VARCHAR(100),
     contrato_id_prod INT,
     productor_nombre VARCHAR(100),
     contrato_id_contrato INT,
     contrato_fecha_contrato DATE,
     contrato_fecha_vencimiento DATE,
     contrato_clasificacion VARCHAR(2),
-    contrato_porc_total_prod NUMERIC(5, 2),
+    contrato_porc_total_prod NUMERIC(5, 2)
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
         c.id_sub, 
-        s.nombre_sub 
+        s.nombre_sub,
         c.id_prod, 
         p.nombre_prod,
         c.id_contrato, 
         c.fecha_contrato, 
-        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento  
+        (c.fecha_contrato + INTERVAL '1 year')::DATE AS contrato_fecha_vencimiento, 
         c.clasificacion, 
-        c.porc_total_prod, 
+        c.porc_total_prod
     FROM 
         contratos c
     JOIN 
