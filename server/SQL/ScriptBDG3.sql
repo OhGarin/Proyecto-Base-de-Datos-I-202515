@@ -1,54 +1,88 @@
 --SECUENCIAS INICIO
 DROP SEQUENCE IF EXISTS seq_paises;
-CREATE SEQUENCE seq_paises START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_paises
+	START WITH 1
+	INCREMENT BY 1;
 	
 DROP SEQUENCE IF EXISTS seq_flores_corte;
-CREATE SEQUENCE seq_flores_corte START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_flores_corte 
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_significados;
-CREATE SEQUENCE seq_significados START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_significados
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_subastadoras;
-CREATE SEQUENCE seq_subastadoras START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_subastadoras
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_productores;
-CREATE SEQUENCE seq_productores START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_productores
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_floristerias;
-CREATE SEQUENCE seq_floristerias START WITH 1 INCREMENT BY 1;
-
-DROP SEQUENCE IF EXISTS seq_contactos_emp;
-CREATE SEQUENCE seq_contactos_emp START WITH 1 INCREMENT BY 1;
-
-DROP SEQUENCE IF EXISTS seq_enlace;
-CREATE SEQUENCE seq_enlace START WITH 1 INCREMENT BY 1;
-
-DROP SEQUENCE IF EXISTS seq_catalogoprod;
-CREATE SEQUENCE seq_catalogoprod START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_floristerias
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_contratos;
-CREATE SEQUENCE seq_contratos START WITH 1 INCREMENT BY 1;
-
-DROP SEQUENCE IF EXISTS seq_lotes;
-CREATE SEQUENCE seq_lotes START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_contratos
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_pagos;
-CREATE SEQUENCE seq_pagos START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_pagos
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_contactos_emp;
+CREATE SEQUENCE seq_contactos_emp
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_enlace;
+CREATE SEQUENCE seq_enlace
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_catalogoprod;
+CREATE SEQUENCE seq_catalogoprod
+	START WITH 1
+	INCREMENT BY 1;
+
+DROP SEQUENCE IF EXISTS seq_lotes;
+CREATE SEQUENCE seq_lotes
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_catalogofloristeria;
-CREATE SEQUENCE seq_catalogofloristeria START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_catalogofloristeria
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_bouquet;
-CREATE SEQUENCE seq_bouquet START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_bouquet
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_cliente_natural;
-CREATE SEQUENCE seq_cliente_natural START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_cliente_natural
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_cliente_compania;
-CREATE SEQUENCE seq_cliente_compania START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_cliente_compania
+	START WITH 1
+	INCREMENT BY 1;
 
 DROP SEQUENCE IF EXISTS seq_detfacturas_floristeria;
-CREATE SEQUENCE seq_detfacturas_floristeria START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_detfacturas_floristeria
+	START WITH 1
+	INCREMENT BY 1;
 --SECUENCIAS FIN
 
 --TABLAS INICIO
@@ -63,6 +97,13 @@ CREATE TABLE colores(
 	descripcion VARCHAR(300) NOT NULL
 );
 
+CREATE TABLE significados(
+	id_significado SMALLINT DEFAULT nextval('seq_significados') CONSTRAINT pk_significados PRIMARY KEY,
+	tipo VARCHAR(4) NOT NULL,
+	descripcion VARCHAR(300) NOT NULL,
+	CONSTRAINT check_tipo CHECK(tipo in('ocas','sent'))
+);
+
 CREATE TABLE flores_corte(
 	id_flor_corte INT DEFAULT nextval('seq_flores_corte') CONSTRAINT pk_florcorte PRIMARY KEY,
 	nombre_comun VARCHAR(40) NOT NULL UNIQUE,
@@ -70,13 +111,6 @@ CREATE TABLE flores_corte(
 	etimologia VARCHAR(250) NOT NULL,
 	tem_conservacion NUMERIC(4,2) NOT NULL,
 	colores VARCHAR(250) NOT NULL
-);
-
-CREATE TABLE significados(
-	id_significado SMALLINT DEFAULT nextval('seq_significados') CONSTRAINT pk_significados PRIMARY KEY,
-	tipo VARCHAR(4) NOT NULL,
-	descripcion VARCHAR(300) NOT NULL,
-	CONSTRAINT check_tipo CHECK(tipo in('ocas','sent'))
 );
 
 CREATE TABLE subastadoras(
@@ -102,6 +136,39 @@ CREATE TABLE floristerias(
 	email_floristeria VARCHAR(40) NOT NULL UNIQUE,
 	id_pais SMALLINT NOT NULL,
 	url_imagen VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE contratos(
+	id_sub INT NOT NULL,
+	id_prod INT NOT NULL,
+	id_contrato INT DEFAULT nextval('seq_contratos') NOT NULL UNIQUE,
+	fecha_contrato DATE NOT NULL,
+	clasificacion VARCHAR(2) NOT NULL,
+	porc_total_prod NUMERIC(5,2) NOT NULL,
+	cancelado VARCHAR(2),
+	id_contrato_padre INT references contratos(id_contrato) UNIQUE,
+	CONSTRAINT check_clasificacion CHECK (clasificacion in('CA','CB','CC','CG','KA')),
+	CONSTRAINT check_cancelado CHECK (cancelado in ('SI','NO')),
+	CONSTRAINT pk_contratos PRIMARY KEY (id_sub,id_prod,id_contrato),
+	CONSTRAINT check_porcentaje CHECK (porc_total_prod>0 AND porc_total_prod<=100)
+);
+
+CREATE TABLE pagos_multas(
+	id_sub INT NOT NULL,
+	id_prod INT NOT NULL,
+	id_contrato INT NOT NULL,
+	id_pagos INT DEFAULT nextval('seq_pagos') NOT NULL,
+	fecha_pago DATE NOT NULL,
+	monto_euros FLOAT NOT NULL,
+	tipo VARCHAR(3) NOT NULL,
+	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
+	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos)
+);
+
+CREATE TABLE afiliacion(
+	id_sub INT NOT NULL,
+	id_floristeria INT NOT NULL,
+	CONSTRAINT pk_afiliacion PRIMARY KEY(id_sub, id_floristeria)
 );
 
 CREATE TABLE contactos_empleados(
@@ -134,21 +201,6 @@ CREATE TABLE catalogos_productores(
 	CONSTRAINT pk_catalogo_prod PRIMARY KEY (id_productor, vbn)
 );
 
-CREATE TABLE contratos(
-	id_sub INT NOT NULL,
-	id_prod INT NOT NULL,
-	id_contrato INT DEFAULT nextval('seq_contratos') NOT NULL UNIQUE,
-	fecha_contrato DATE NOT NULL,
-	clasificacion VARCHAR(2) NOT NULL,
-	porc_total_prod NUMERIC(5,2) NOT NULL,
-	cancelado VARCHAR(2),
-	id_contrato_padre INT references contratos(id_contrato) UNIQUE,
-	CONSTRAINT check_clasificacion CHECK (clasificacion in('CA','CB','CC','CG','KA')),
-	CONSTRAINT check_cancelado CHECK (cancelado in ('SI','NO')),
-	CONSTRAINT pk_contratos PRIMARY KEY (id_sub,id_prod,id_contrato),
-	CONSTRAINT check_porcentaje CHECK (porc_total_prod>0 AND porc_total_prod<=100)
-);
-
 CREATE TABLE det_contratos( 
 	id_sub INT NOT NULL,
 	id_prod INT NOT NULL,
@@ -158,21 +210,14 @@ CREATE TABLE det_contratos(
 	CONSTRAINT pk_det_contratos PRIMARY KEY (id_sub,id_prod,id_contrato,vbn)
 );
 
-CREATE TABLE afiliacion(
-	id_sub INT NOT NULL,
-	id_floristeria INT NOT NULL,
-	CONSTRAINT pk_afiliacion PRIMARY KEY(id_sub, id_floristeria)
-);
-
 CREATE TABLE facturas_subastas(
 	num_factura NUMERIC(12) CONSTRAINT pk_facturasub PRIMARY KEY,
-	fecha_emision DATE NOT NULL,
+	fecha_emision TIMESTAMP NOT NULL,
 	total FLOAT NOT NULL,
 	id_sub INT NOT NULL,
 	id_floristeria INT NOT NULL,
 	envio VARCHAR(2),
-	CONSTRAINT check_envio CHECK (envio in('SI','NO')),
-	CONSTRAINT check_total_factura CHECK (total>0)
+	CONSTRAINT check_envio CHECK (envio in('SI','NO'))
 );
 
 CREATE TABLE lotes_flor( 
@@ -191,19 +236,6 @@ CREATE TABLE lotes_flor(
 	CONSTRAINT check_precio_final CHECK(precio_final>0)
 );
 
-CREATE TABLE pagos_multas(
-	id_sub INT NOT NULL,
-	id_prod INT NOT NULL,
-	id_contrato INT NOT NULL,
-	id_pagos INT DEFAULT nextval('seq_pagos') NOT NULL,
-	fecha_pago DATE NOT NULL,
-	monto_euros FLOAT NOT NULL,
-	tipo VARCHAR(3) NOT NULL,
-	CONSTRAINT check_pagos CHECK(tipo in('MEM','MUL','COM')),
-	CONSTRAINT pk_pagos PRIMARY KEY (id_sub,id_prod,id_contrato,id_pagos),
-	CONSTRAINT check_monto CHECK(monto_euros>0)
-);
-
 CREATE TABLE catalogos_floristerias(
 	id_floristeria INT NOT NULL,
 	id_catalogo INT DEFAULT nextval('seq_catalogofloristeria') NOT NULL,
@@ -220,9 +252,7 @@ CREATE TABLE historicos_precio(
 	precio_unitario NUMERIC(5,2) NOT NULL,
 	tamano_tallo NUMERIC(5,2),
 	fecha_final TIMESTAMP,
-	CONSTRAINT pk_historico_precio PRIMARY KEY (id_floristeria,id_catalogo,fecha_inicio),
-	CONSTRAINT check_precio_unitario_flor CHECK(precio_unitario>0),
-	CONSTRAINT check_tamano_tallo CHECK(tamano_tallo>0)
+	CONSTRAINT pk_historico_precio PRIMARY KEY (id_floristeria,id_catalogo,fecha_inicio)
 );
 
 CREATE TABLE bouquets(
@@ -232,9 +262,7 @@ CREATE TABLE bouquets(
 	cantidad NUMERIC(3) NOT NULL,
 	descripcion VARCHAR(300),
 	tamano_tallo NUMERIC(5,2),
-	CONSTRAINT pk_bouquet PRIMARY KEY (id_floristeria, id_catalogo, id_bouquet),
-	CONSTRAINT check_tamano_tallo CHECK(tamano_tallo>0),
-	CONSTRAINT check_cantidad CHECK (cantidad>0)
+	CONSTRAINT pk_bouquet PRIMARY KEY (id_floristeria, id_catalogo, id_bouquet)
 );
 
 CREATE TABLE clientes_natural_floristerias(
@@ -289,6 +317,21 @@ ALTER TABLE productores
 ALTER TABLE floristerias
 	ADD CONSTRAINT fk_pais FOREIGN KEY(id_pais) REFERENCES paises(id_pais);
 
+ALTER TABLE contratos 
+	ADD CONSTRAINT fk_sub FOREIGN KEY (id_sub) REFERENCES subastadoras(id_sub);
+
+ALTER TABLE contratos 
+	ADD CONSTRAINT fk_prod FOREIGN KEY (id_prod) REFERENCES productores(id_prod);
+
+ALTER TABLE pagos_multas
+	ADD CONSTRAINT fk_contratos FOREIGN KEY (id_sub,id_prod,id_contrato) REFERENCES contratos(id_sub,id_prod,id_contrato);
+
+ALTER TABLE afiliacion 
+	ADD CONSTRAINT fk_sub FOREIGN KEY (id_sub) REFERENCES subastadoras(id_sub);
+
+ALTER TABLE afiliacion 
+	ADD CONSTRAINT fk_floristeria FOREIGN KEY (id_floristeria) REFERENCES floristerias(id_floristeria);
+
 ALTER TABLE contactos_empleados 
 	ADD CONSTRAINT fk_floristeria FOREIGN KEY (id_floristeria) REFERENCES floristerias(id_floristeria);
 
@@ -310,23 +353,11 @@ ALTER TABLE catalogos_productores
 ALTER TABLE catalogos_productores 
 	ADD CONSTRAINT fk_color FOREIGN KEY (codigo_color) REFERENCES colores(codigo_color);
 
-ALTER TABLE contratos 
-	ADD CONSTRAINT fk_sub FOREIGN KEY (id_sub) REFERENCES subastadoras(id_sub);
-
-ALTER TABLE contratos 
-	ADD CONSTRAINT fk_prod FOREIGN KEY (id_prod) REFERENCES productores(id_prod);
-
 ALTER TABLE det_contratos
 	 ADD CONSTRAINT fk_contrato FOREIGN KEY (id_sub, id_prod, id_contrato) REFERENCES contratos(id_sub, id_prod, id_contrato);
 
 ALTER TABLE det_contratos 
 	ADD CONSTRAINT fk_cat_prod FOREIGN KEY (id_prod, vbn) REFERENCES catalogos_productores(id_productor, vbn);
-
-ALTER TABLE afiliacion 
-	ADD CONSTRAINT fk_sub FOREIGN KEY (id_sub) REFERENCES subastadoras(id_sub);
-
-ALTER TABLE afiliacion 
-	ADD CONSTRAINT fk_floristeria FOREIGN KEY (id_floristeria) REFERENCES floristerias(id_floristeria);
 
 ALTER TABLE facturas_subastas
 	ADD CONSTRAINT fk_afiliacion FOREIGN KEY (id_sub, id_floristeria) REFERENCES afiliacion(id_sub, id_floristeria);
@@ -336,9 +367,6 @@ ALTER TABLE lotes_flor
 
 ALTER TABLE lotes_flor 
 	ADD CONSTRAINT fk_facturasubasta FOREIGN KEY (num_factura) REFERENCES facturas_subastas(num_factura);
-
-ALTER TABLE pagos_multas
-	ADD CONSTRAINT fk_contratos FOREIGN KEY (id_sub,id_prod,id_contrato) REFERENCES contratos(id_sub,id_prod,id_contrato);
 
 ALTER TABLE catalogos_floristerias 	
 	ADD CONSTRAINT fk_floristeria FOREIGN KEY (id_floristeria) REFERENCES floristerias(id_floristeria);
@@ -371,7 +399,7 @@ ALTER TABLE det_facturas_floristerias
 	ADD CONSTRAINT fk_catalogo_floristeria FOREIGN KEY (id_floristeria, id_catalogo) REFERENCES catalogos_floristerias(id_floristeria, id_catalogo);	
 
 ALTER TABLE det_facturas_floristerias
-	ADD CONSTRAINT fk_bouquet FOREIGN KEY (id_floristeria, id_catalogo, id_bouquet) REFERENCES bouquets(id_floristeria, id_catalogo, id_bouquet);	
+	ADD CONSTRAINT fk_bouquet FOREIGN KEY (id_floristeria, id_catalogo, id_bouquet) REFERENCES bouquets(id_floristeria, id_catalogo, id_bouquet);
 --ALTERS FIN
 
 --VIEWS INICIO
@@ -585,27 +613,28 @@ $$ LANGUAGE plpgsql;
 --Funcion para asegurarse de que el contrato padre exista y que sean el mismo id_sub y id_prod y devolverá su fecha de creación
 CREATE OR REPLACE FUNCTION verificar_contrato_padre(
     p_id_contrato_padre INT,
-    p_nombre_sub VARCHAR(40),
-    p_nombre_prod VARCHAR(40)
+    p_id_sub INT,
+    p_id_prod INT
 )
 RETURNS DATE AS $$
 DECLARE
-    v_id_sub INT;
-    v_id_prod INT;
+    v_nombre_sub VARCHAR(40);
+    v_nombre_prod VARCHAR(40);
     fecha_padre DATE;
     estado_cancelado VARCHAR(2);
 BEGIN
-    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+    SELECT nombre_sub INTO v_nombre_sub FROM subastadoras WHERE id_sub = p_id_sub;
+    SELECT nombre_prod INTO v_nombre_prod FROM productores WHERE id_prod = p_id_prod;
 
     SELECT fecha_contrato, cancelado INTO fecha_padre, estado_cancelado
     FROM contratos
     WHERE id_contrato = p_id_contrato_padre 
-      AND id_sub = v_id_sub 
-      AND id_prod = v_id_prod;
+      AND id_sub = p_id_sub 
+      AND id_prod = p_id_prod;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'El contrato al que se referencia para la renovación con ID % no existe para el productor % en la subastadora %', 
-            p_id_contrato_padre, p_nombre_prod, p_nombre_sub;
+            p_id_contrato_padre, v_nombre_prod, v_nombre_sub;
     END IF;
 
     IF estado_cancelado = 'SI' THEN
@@ -640,6 +669,9 @@ RETURNS TRIGGER AS $$
 DECLARE
     fecha_padre DATE;
 BEGIN
+    IF NEW.id_contrato_padre IS NULL THEN
+        RETURN NEW;
+    END IF;
     fecha_padre := verificar_contrato_padre(NEW.id_contrato_padre, NEW.id_sub, NEW.id_prod);
     PERFORM validar_fecha_renovacion(NEW.fecha_contrato, fecha_padre);
     RETURN NEW;
@@ -651,9 +683,6 @@ BEFORE INSERT OR UPDATE ON contratos
 FOR EACH ROW
 WHEN (NEW.id_contrato_padre IS NOT NULL) 
 EXECUTE FUNCTION validar_renovacion_contrato();
-
---DESACTIVARLO PARA COLOCAR LOS INSERTS DE CONTRATOS
-ALTER TABLE contratos DISABLE TRIGGER trigger_validar_renovacion;
 
 --CREACION DE CONTRATOS
 CREATE OR REPLACE PROCEDURE crear_contrato(
@@ -1090,6 +1119,39 @@ FOR EACH ROW
 WHEN (NEW.tipo = 'COM')
 EXECUTE FUNCTION trg_calcular_comision();
 
+--Funcion para ejecutar el trigger que valida si la fechas final es mayor que la fecha inicial en el historico precios
+CREATE OR REPLACE FUNCTION validar_fechas_historicos_precio()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_final IS NOT NULL AND NEW.fecha_final <= NEW.fecha_inicio THEN
+        RAISE EXCEPTION 'La fecha final debe ser mayor que la fecha de inicio (en histórico de id (%, %))', NEW.id_floristeria, NEW.id_catalogo;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+--Trigger para validar que una fecha final sea mayor que una fecha inicial en el historico de precios 
+CREATE TRIGGER check_fecha_historicos_precio
+BEFORE INSERT OR UPDATE ON historicos_precio
+FOR EACH ROW EXECUTE FUNCTION validar_fechas_historicos_precio();
+
+--Funcion para ejecutar el trigger que valida si la fechas de emision es posterior a la actual 
+CREATE OR REPLACE FUNCTION validar_fecha_factura_no_futura()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.fecha_emision > CURRENT_TIMESTAMP THEN
+        RAISE EXCEPTION 'No se puede registrar una factura con una fecha futura: %', NEW.fecha_emision;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+--Trigger para validar que una fecha de emision de una factura de subasta no sea mayor a la actual 
+CREATE TRIGGER check_fecha_factura_no_futura
+BEFORE INSERT OR UPDATE ON facturas_subastas
+FOR EACH ROW EXECUTE FUNCTION validar_fecha_factura_no_futura();
+
 --Procedure para registrar una comision 
 CREATE OR REPLACE PROCEDURE registrar_comision(
     p_nombre_sub VARCHAR(40),
@@ -1166,6 +1228,22 @@ BEFORE INSERT ON pagos_multas
 FOR EACH ROW
 WHEN (NEW.tipo = 'MUL') 
 EXECUTE FUNCTION trg_calcular_multa();
+
+-- Trigger que evita que el campo num_factura sea alterado
+CREATE OR REPLACE FUNCTION trg_validar_lote_no_comprado()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.num_factura IS NOT NULL THEN
+        RAISE EXCEPTION 'No se puede modificar la factura a la que hace referencia un lote que ya ha sido comprado';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validar_lote_no_comprado
+BEFORE UPDATE ON lotes_flor
+FOR EACH ROW
+EXECUTE FUNCTION trg_validar_lote_no_comprado();
 
 --Procedure a llamar para registrar una multa
 CREATE OR REPLACE PROCEDURE registrar_multa(
@@ -1585,6 +1663,187 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Función que crea una factura de subasta sin lotes, con total en 0
+CREATE OR REPLACE FUNCTION crear_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_floristeria VARCHAR(40),
+    quiere_envio VARCHAR(2)
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    id_subastadora INT;
+    id_florist INT;
+    fecha_emision TIMESTAMP;
+    numero_factura_anterior NUMERIC(12);
+    nombre_florist VARCHAR(40);
+    nueva_factura facturas_subastas;
+BEGIN
+    nombre_florist := nombre_floristeria;
+    -- Verifica que quiere_envio sea 'SI' o 'NO'
+    IF quiere_envio NOT IN ('SI', 'NO') THEN
+        RAISE EXCEPTION 'El valor de quiere_envio debe ser "SI" o "NO"';
+    END IF;
+
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id de la floristería
+    SELECT f.id_floristeria INTO id_florist
+    FROM floristerias f
+    WHERE f.nombre_floristeria = nombre_florist;
+
+    -- Comprobar que la floristeria está afiliada a la subastadora
+    IF NOT EXISTS (
+        SELECT 1
+        FROM afiliacion
+        WHERE id_sub = id_subastadora
+          AND id_floristeria = id_florist
+    ) THEN
+        RAISE EXCEPTION 'La floristería no está afiliada a la subastadora';
+    END IF;
+
+    -- Obtiene la fecha actual
+    fecha_emision := CURRENT_TIMESTAMP;
+
+    numero_factura_anterior := (SELECT MAX(num_factura) FROM facturas_subastas);
+
+    -- Si no se encuentra número de factura anterior, num_factura se pone como 0
+    IF numero_factura_anterior IS NULL THEN
+        numero_factura_anterior := 0;
+    END IF;
+
+    -- Inserta la factura en la tabla facturas_subastas
+    INSERT INTO facturas_subastas(num_factura, fecha_emision, total, id_sub, id_floristeria, envio)
+    VALUES (numero_factura_anterior + 1, fecha_emision, 0, id_subastadora, id_florist, quiere_envio)
+    RETURNING * INTO nueva_factura;
+    RETURN NEXT nueva_factura;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION crear_lote_factura(
+    nombre_subastadora VARCHAR(40),
+    nombre_productor VARCHAR(40),
+    nombre_propio_flor VARCHAR(40),
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT,
+    numero_factura NUMERIC(12)
+)
+RETURNS SETOF lotes_flor AS $$
+DECLARE
+    id_subastadora INT;
+    id_productor INT;
+    id_cont INT;
+    vbn_flor INT;
+    nuevo_lote lotes_flor;
+BEGIN
+    -- Obtiene el id de la subastadora
+    SELECT id_sub INTO id_subastadora
+    FROM subastadoras
+    WHERE nombre_sub = nombre_subastadora;
+
+    -- Obtiene el id del productor
+    SELECT id_prod INTO id_productor
+    FROM productores
+    WHERE nombre_prod = nombre_productor;
+
+    -- Obtiene el vbn de la flor desde el catalogo del productor
+    SELECT vbn INTO vbn_flor
+    FROM catalogos_productores
+    WHERE id_productor = id_productor
+      AND nombre_propio = nombre_propio_flor;
+
+    -- Obtiene el id del contrato activo del productor con la subastadora
+    SELECT id_contrato INTO id_cont
+    FROM contratos
+    WHERE id_sub = id_subastadora
+      AND id_prod = id_productor
+      AND cancelado = 'NO'
+      AND CURRENT_DATE BETWEEN fecha_contrato AND (fecha_contrato + INTERVAL '1 year'); -- los contratos son válidos por un año
+
+    -- Si no se encontró un contrato activo, lanza una excepción
+    IF id_cont IS NULL THEN
+        RAISE EXCEPTION 'No se encontró un contrato activo entre el productor % y la subastadora %', nombre_productor, nombre_subastadora;
+    END IF;
+
+    -- Verifica que el vbn se encuentre en el detalle de contrato
+    IF NOT EXISTS (
+        SELECT 1
+        FROM det_contratos
+        WHERE id_sub = id_subastadora
+          AND id_prod = id_productor
+          AND id_contrato = id_cont
+          AND vbn = vbn_flor
+    ) THEN
+        RAISE EXCEPTION 'El VBN % no está en el detalle del contrato activo', vbn_flor;
+    END IF;
+
+    -- Inserta el lote en la tabla lotes_flor
+    INSERT INTO lotes_flor(cantidad, precio_inicial, BI, precio_final, id_sub, id_prod, id_contrato, vbn, num_factura)
+    VALUES (cantidad_flores, precio_inicial, bi_lote, precio_final, id_subastadora, id_productor, id_cont, vbn_flor, numero_factura)
+    RETURNING * INTO nuevo_lote;
+    RETURN NEXT nuevo_lote;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Record que es necesario para generar_factura_subasta
+CREATE TYPE lote_flor AS (
+    nombre_productor VARCHAR(40),
+    nombre_propio_flor VARCHAR(40),
+    cantidad_flores INT,
+    bi_lote FLOAT,
+    precio_inicial FLOAT,
+    precio_final FLOAT
+);
+
+-- Funcion que genera una factura de subasta con lotes de flores, devuelve la factura creada
+CREATE OR REPLACE FUNCTION generar_factura_subasta(
+    nombre_subast VARCHAR(40),
+    nombre_florist VARCHAR(40),
+    quiere_envio VARCHAR(2),
+    lotes lote_flor[]
+)
+RETURNS SETOF facturas_subastas AS $$
+DECLARE
+    factura facturas_subastas;
+    lote lote_flor;
+BEGIN
+    -- Crea la factura
+    SELECT fn.* INTO factura FROM crear_factura(nombre_subast, nombre_florist, quiere_envio) fn;
+
+    -- Inserta los lotes en la factura
+    FOREACH lote IN ARRAY lotes
+    LOOP
+        -- Ejecuta la función crear_lote_factura
+        PERFORM crear_lote_factura(
+            nombre_subast,
+            lote.nombre_productor,
+            lote.nombre_propio_flor,
+            lote.cantidad_flores,
+            lote.bi_lote,
+            lote.precio_inicial,
+            lote.precio_final,
+            factura.num_factura
+        );
+    END LOOP;
+
+    RETURN NEXT factura;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Record necesario para recomendar_flores
+CREATE TYPE flor AS (
+	nombre_propio VARCHAR(40),
+	nombre_comun VARCHAR(40),
+	genero_especie VARCHAR(40),
+    tamano_tallo NUMERIC(5,2),
+	precio NUMERIC(5,2),
+	coincidencias INT
+);
+
 --RECOMENDADOR
 CREATE OR REPLACE FUNCTION recomendar_flores(
 	nombre_florist VARCHAR(40),
@@ -1919,11 +2178,11 @@ INSERT INTO pagos_multas (id_sub, id_prod, id_contrato, fecha_pago, tipo) VALUES
 (2, 2, 7, '2024-07-05', 'COM'),
 (2, 2, 7, '2024-08-05', 'COM'),
 
-(3, 3, 8, '2024-10-05', 'COM'),  
-(3, 3, 8, '2024-11-05', 'COM'),  
-(3, 3, 8, '2024-12-05', 'COM'),  
+(3, 3, 8, '2024-10-05', 'COM'),  -- Comisión de Septiembre (pagada a tiempo)
+(3, 3, 8, '2024-11-05', 'COM'),  -- Comisión de octubre (pagada a tiempo)
+(3, 3, 8, '2024-12-05', 'COM'),  -- Comisión de octubre (pagada a tiempo)
 
-(2, 3, 9, '2024-12-08', 'COM')  
+(2, 3, 9, '2024-12-08', 'COM')  -- Comisión de noviembre (pagada tarde)
 ;
 
 INSERT INTO catalogos_floristerias (id_floristeria, nombre, id_flor_corte, codigo_color) VALUES
@@ -2070,10 +2329,10 @@ INSERT INTO det_facturas_floristerias (cantidad, id_floristeria, num_factura, id
 (1, 1, 1002, 1, 1, 150.50, 4.0, 4.5, 4.25),  -- Detalle 1 para factura 1002
 (1, 1, 1002, 1, 2, 50.00, 4.0, 4.0, 4.00),   -- Detalle 2 para factura 1002
 
-(1, 2, 1003, 3, NULL, 60.00, NULL, NULL, NULL),   -- Detalle 1 para factura 1003
+(1, 2, 1003, 3, NULL, 60.00, 3.5, 4.0, 3.75),   -- Detalle 1 para factura 1003
 (1, 2, 1003, 4, NULL, 60.00, 4.0, 4.0, 4.00),   -- Detalle 2 para factura 1003
 
-(1, 2, 1004, 6, 8, 90.25, NULL, NULL, NULL),   -- Detalle 1 para factura 1004
+(1, 2, 1004, 6, 8, 90.25, 3.0, 3.5, 3.25),   -- Detalle 1 para factura 1004
 (1, 2, 1004, 5, 7, 90.00, 4.0, 4.5, 4.25),   -- Detalle 2 para factura 1004
 
 (1, 3, 1005, 7, NULL, 49.99, 3.0, 4.0, 3.50),   -- Detalle 1 para factura 1005
@@ -2097,8 +2356,6 @@ INSERT INTO det_facturas_floristerias (cantidad, id_floristeria, num_factura, id
 (1, 6, 1011, 14, NULL, 200.00, 5.0, 5.0, 5.00)  -- Detalle 2 para factura 1011
 ;
 --INSERTS FIN
-
-ALTER TABLE contratos DISABLE TRIGGER trigger_validar_renovacion;
 
 --QUERYS PARA REPORTES INICIO
 
