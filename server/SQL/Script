@@ -882,9 +882,9 @@ BEGIN
     JOIN 
         subastadoras s ON c.id_sub = s.id_sub
     WHERE 
-        c.cancelado = 'NO' OR c.cancelado IS NULL 
+        (c.cancelado = 'NO' OR c.cancelado IS NULL)
       AND 
-        c.fecha_contrato + INTERVAL '1 year' >= CURRENT_DATE;  
+       (c.fecha_contrato + INTERVAL '1 year') >= CURRENT_DATE;  
 END;
 $$ LANGUAGE plpgsql;
 
@@ -920,9 +920,9 @@ BEGIN
     JOIN 
         subastadoras s ON c.id_sub = s.id_sub
     WHERE 
-         c.cancelado = 'NO' OR c.cancelado IS NULL 
+         (c.cancelado = 'NO' OR c.cancelado IS NULL)
       AND 
-        c.fecha_contrato + INTERVAL '1 year' < CURRENT_DATE;  
+        (c.fecha_contrato + INTERVAL '1 year') < CURRENT_DATE;  
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1347,12 +1347,12 @@ BEGIN
     WHILE v_fecha_inicio <= v_fecha_fin LOOP
 
         RETURN QUERY SELECT 
-            v_fecha_inicio AS mes,
+            DATE_TRUNC('month', v_fecha_inicio)::DATE AS mes,
               CAST(COALESCE(SUM(l.precio_final), 0) AS NUMERIC) AS ventas
         FROM lotes_flor l
         JOIN facturas_subastas f ON l.num_factura = f.num_factura
-        WHERE f.fecha_emision >= v_fecha_inicio
-          AND f.fecha_emision < v_fecha_inicio + INTERVAL '1 month'
+        WHERE f.fecha_emision >= DATE_TRUNC('month', v_fecha_inicio)
+          AND f.fecha_emision < DATE_TRUNC('month', v_fecha_inicio) + INTERVAL '1 month'
           AND l.id_contrato = p_id_contrato;
 
         v_fecha_inicio := v_fecha_inicio + INTERVAL '1 month';
@@ -1360,6 +1360,7 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+
 
 --   EVALUAR ESTADO DE UN PRODUCTOR ANTE UNA SUBASTADORA
 
@@ -1429,8 +1430,8 @@ BEGIN
         SELECT COALESCE(MAX(p.fecha_pago), NULL) INTO fecha_pago
         FROM pagos_multas p
         WHERE p.id_contrato = v_id_contrato
-          AND p.fecha_pago >= mes
-          AND p.fecha_pago < mes + INTERVAL '1 month'
+          AND p.fecha_pago >= date_trunc('month', mes) + INTERVAL '1 month'
+          AND p.fecha_pago < date_trunc('month', mes) + INTERVAL '2 months'
           AND p.tipo = 'COM';
 
         IF fecha_pago IS NULL THEN
@@ -1440,13 +1441,11 @@ BEGIN
         SELECT COALESCE(SUM(p.monto_euros), 0) INTO v_comision_pagada
         FROM pagos_multas p
         WHERE p.id_contrato = v_id_contrato
-          AND p.fecha_pago >= mes
-          AND p.fecha_pago < mes + INTERVAL '1 month'
+          AND p.fecha_pago >= date_trunc('month', mes)  + INTERVAL '1 month'
+          AND p.fecha_pago < date_trunc('month', mes) + INTERVAL '2 months'
           AND p.tipo = 'COM';
 
-        v_comision_total := v_comision_total - v_comision_pagada;
-
-        v_acumulado := v_acumulado + GREATEST(v_comision_total, 0);
+        v_acumulado := v_acumulado + GREATEST(v_comision_total - v_comision_pagada, 0);
 
         IF v_acumulado > 0 THEN
             estatus := 'Moroso';
@@ -1457,8 +1456,8 @@ BEGIN
         END IF;
 
         RETURN QUERY SELECT 
-            fecha_pago AS fecha_,  
-            GREATEST(v_comision_total, 0) AS comision_pendiente,
+            fecha_pago AS fecha,  
+            GREATEST(v_comision_total - v_comision_pagada, 0) AS comision_pendiente,
             v_comision_pagada,
             v_acumulado AS total_acumulado,
             estatus;
