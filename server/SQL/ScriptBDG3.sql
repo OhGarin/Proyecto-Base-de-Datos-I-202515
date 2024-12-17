@@ -781,6 +781,47 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+--Funcion para cancelar un contrato activo
+CREATE OR REPLACE FUNCTION cancelar_contrato(
+    p_nombre_sub VARCHAR(40),
+    p_nombre_prod VARCHAR(40)
+) RETURNS VOID AS $$
+DECLARE
+    v_id_sub INT;
+    v_id_prod INT;
+    v_id_contrato INT;
+    v_nombre_prod VARCHAR(100);
+    v_nombre_sub VARCHAR(100);
+BEGIN
+    SELECT * INTO v_id_sub, v_id_prod FROM obtener_ids(p_nombre_sub, p_nombre_prod);
+
+    SELECT c.id_contrato, p.nombre_prod, s.nombre_sub
+    INTO v_id_contrato, v_nombre_prod, v_nombre_sub
+    FROM contratos c
+    JOIN productores p ON c.id_prod = p.id_prod
+    JOIN subastadoras s ON c.id_sub = s.id_sub
+    WHERE c.id_sub = v_id_sub 
+      AND c.id_prod = v_id_prod 
+      AND (c.cancelado = 'NO' OR c.cancelado IS NULL)
+      AND c.fecha_contrato >= NOW() - INTERVAL '1 year'  
+    LIMIT 1; 
+
+    IF FOUND THEN
+        UPDATE contratos
+        SET cancelado = 'SI'
+        WHERE id_sub = v_id_sub 
+          AND id_prod = v_id_prod 
+          AND id_contrato = v_id_contrato;
+          
+        RAISE NOTICE 'Contrato % cancelado exitosamente para el productor % y la subastadora %.', 
+                     v_id_contrato, v_nombre_prod, v_nombre_sub;
+    ELSE
+        RAISE EXCEPTION 'No se encontró un contrato activo para el productor % y la subastadora % dentro del último año.', 
+                        p_nombre_prod, p_nombre_sub;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
 --AUXILIARES PARA EL MANEJO DE CONTRATOS
 
 --Funcion auxiliar para obtener una tabla con los contratos activos actualmente
